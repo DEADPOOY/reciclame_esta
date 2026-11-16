@@ -3,4 +3,5 @@ proyecto de la escuela sobre reciclar los residuos electronicos actualmente con 
 
 
 |quiero|ver como| se hace| una tabla|
+|-----------------------------------|
 |xd| | | |
