@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verificar ficha del punto · ReciclaTech</title>
+<link rel="stylesheet" href="../stilos_perrones/estilos.css">
+</head>
+<body data-pagina="Ficha" data-acceso="admin" data-menu="Ficha.html">
+<a class="sr-only" href="#principal">Saltar al contenido</a>
+<header id="cabecera"></header>
+<div class="cuerpo-admin"><aside id="menu-admin"></aside><main class="contenido" id="principal">
+
+<h1>Verificar ficha del punto</h1>
+<p class="suave">El centro debe verificarse con su ficha de resolución oficial emitida por la Secretaría de Medio Ambiente.</p>
+<div class="dos-col">
+  <section class="tarjeta">
+    <div id="msg" class="mensaje" role="alert" hidden></div>
+    <form id="form-ficha" novalidate onsubmit="return false">
+<div class="campo"><label for="punto">Punto de recepción</label><select id="punto" name="punto" ></select><div class="error-campo" aria-live="polite"></div></div><div class="campo"><label for="numero">No. de resolución</label><input type="text" id="numero" name="numero" placeholder="Número de la ficha" ><div class="error-campo" aria-live="polite"></div></div><div class="campo"><label for="fecha">Fecha de emisión</label><input type="date" id="fecha" name="fecha" placeholder="" ><div class="error-campo" aria-live="polite"></div></div><div class="campo"><label for="archivo">Ficha oficial (PDF)</label><input type="file" id="archivo" name="archivo" accept="application/pdf,image/*"><div class="suave chico" id="archivo-actual"></div><div class="error-campo" aria-live="polite"></div></div>
+      <div class="fila-botones"><button class="btn" id="verificar" type="button">Verificar ficha</button><button class="btn peligro" id="revocar" type="button">Retirar verificación</button></div>
+    </form>
+  </section>
+  <aside class="tarjeta panel"><h3>Estado</h3><p id="estado"></p><p class="suave chico">Al verificar la ficha, el punto queda habilitado para consulta de los usuarios.</p></aside>
+</div>
+
+</main></div>
+<footer id="pie"></footer>
+<script src="../js/datos.js"></script>
+<script src="../js/app.js"></script>
+<script src="../js/paginas.js"></script>
+</body>
+</html>
