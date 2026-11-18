@@ -24,3 +24,7 @@ Ejecutar con:
   mysql -h 127.0.0.1 -u reciclatech -p091119 < bd/datos_ejemplo.sql
   o desde dentro de MySQL:
   SOURCE /ruta/al/proyecto/bd/datos_ejemplo.sql;
+
+- actualizacion del 16/11/26
+    la parte pricipal de los html son funcionales y realmente sirven agregue el js de paginas
+    este lo que 

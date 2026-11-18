@@ -3,7 +3,15 @@ window.Paginas = (() => {
   const $ = (id) => document.getElementById(id);
   const E = App.esc;
 
+  // ok me costo pero para que sea facil de entender voy a dejar de lado las groserias y payasadas y nos pondremos algo tecnicos
+
+  // Bloque principal del archivo: aquí se definen los controladores de cada vista.
+  // Cada función se ejecuta cuando la página HTML correspondiente carga su contenido.
+  // La lógica se enfoca en validar formularios, renderizar HTML y delegar las acciones a App o API.
+
   /* ===================== PÚBLICO ===================== */
+  // Sección pública: pantallas de acceso y navegación general para usuarios sin sesión o con sesión básica.
+  // Incluye la página de inicio, registro, login y la lógica compartida para autenticación.
   function Index() {
     $('form-inicio').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -45,6 +53,8 @@ window.Paginas = (() => {
     f.addEventListener('reset', () => { App.limpiarMarcas(f); App.mensaje('msg', ''); });
   }
 
+  // Función compartida para registrar o iniciar sesión.
+  // Valida el estado de la sesión, llama a la API correspondiente y redirige según el rol del usuario.
   async function enviarCredenciales(form, registrar) {
     const boton = form.querySelector('[type="submit"]');
     boton.disabled = true;
@@ -70,6 +80,8 @@ window.Paginas = (() => {
   }
 
   /* ===================== USUARIO ===================== */
+  // Sección de usuario: pantallas para consultar centros, revisar reportes y hacer seguimiento del perfil.
+  // Aquí se construyen las tarjetas de puntos, filtros de búsqueda y la vista de detalle de cada centro.
   function MenuUsuario() {
     const s = API.sesion();
     $('saludo').textContent = 'Bienvenido, ' + s.nombre;
@@ -81,6 +93,8 @@ window.Paginas = (() => {
       : '<div class="vacio">Aún no has enviado reportes.</div>';
   }
 
+  // Crea una tarjeta HTML reutilizable para mostrar un centro de acopio en cualquier vista de consulta o búsqueda.
+  // El parámetro extra permite añadir contenido adicional cuando se necesita una vista más específica.
   function tarjetaPunto(p, extra) {
     return '<article class="punto-card" data-id="' + p.id + '"><h3>' + E(p.nombre) + '</h3>' +
       '<div class="suave chico">' + E(API.dirCompleta(p)) + '</div>' + (extra || '') +
@@ -88,6 +102,7 @@ window.Paginas = (() => {
       '<a class="btn sec chico" href="Punto.html?id=' + p.id + '">Ver información</a></div></article>';
   }
 
+  // Consulta general de puntos: lista los centros disponibles, permite buscar por texto y seleccionar uno para verlo en el mapa.
   function Consulta() {
     const lista = $('lista'); const mapa = $('mapa'); const enlace = $('enlace-mapa');
     let seleccionado = null;
@@ -113,6 +128,8 @@ window.Paginas = (() => {
     pintar();
   }
 
+  // Búsqueda de puntos con filtros por texto y por tipo de residuo.
+  // Los criterios se leen de la URL para mantener el estado al navegar entre pantallas.
   function Buscar() {
     const tipos = (App.parametro('tipos') || '').split(',').filter(Boolean).map(Number);
     $('q').value = App.parametro('q') || '';
@@ -142,6 +159,8 @@ window.Paginas = (() => {
     pintar();
   }
 
+  // Pantalla de selección de filtros por residuo.
+  // Muestra checkboxes para elegir tipos y previsualiza los resultados antes de aplicar los filtros definitivos.
   function Filtro() {
     const sel = (App.parametro('tipos') || '').split(',').filter(Boolean).map(Number);
     const q = App.parametro('q') || '';
@@ -164,6 +183,8 @@ window.Paginas = (() => {
     vista();
   }
 
+  // Detalle de un punto específico.
+  // Solo muestra el contenido si el centro existe y está verificado, o si el usuario es administrador.
   function Punto() {
     const p = API.punto(App.parametro('id')); const s = API.sesion();
     const visible = p && (p.ficha.estado === 'verificada' || (s && s.rol === 'admin'));
@@ -184,6 +205,7 @@ window.Paginas = (() => {
     $('b-reporte').href = 'Reporte.html?id=' + p.id;
   }
 
+  // Muestra los horarios de un punto elegido desde un selector desplegable.
   function Horarios() {
     const sel = $('punto'); const cont = $('tabla');
     sel.innerHTML = App.opcionesPuntos(API.verificados(), App.parametro('id'));
@@ -197,6 +219,8 @@ window.Paginas = (() => {
     pintar();
   }
 
+  // Formulario para enviar un reporte sobre un centro de acopio.
+  // El trámite valida punto, motivo y una descripción con longitud mínima para asegurar el caso.
   function Reporte() {
     const f = $('form-reporte');
     f.punto.innerHTML = App.opcionesPuntos(API.verificados(), App.parametro('id'), 'Seleccione un punto');
@@ -217,6 +241,8 @@ window.Paginas = (() => {
   }
 
   /* ===================== ADMINISTRADOR ===================== */
+  // Sección administrativa: panel central para gestionar puntos, fichas, residuos, horarios, ubicaciones y reportes.
+  // En estas vistas el administrador normalmente actualiza datos, cambia estados y revisa incidencias.
   function MenuAdmin() {
     const pts = API.todos();
     $('s-puntos').textContent = pts.length;
@@ -229,6 +255,7 @@ window.Paginas = (() => {
       : '<div class="vacio">Todavía no hay modificaciones registradas.</div>';
   }
 
+  // Administración de puntos: crea, edita y elimina centros de acopio.
   function AdmPuntos() {
     const f = $('form-punto'); let editando = null;
     f.alcaldia.innerHTML = App.opcionesLista(API.ALCALDIAS, '', 'Seleccione');
@@ -272,6 +299,8 @@ window.Paginas = (() => {
     tabla();
   }
 
+  // Verificación de fichas oficiales de cada punto.
+  // Aquí se valida la ficha, se adjunta el archivo y se cambia el estado de verificación del centro.
   function Ficha() {
     const sel = $('punto'); const f = $('form-ficha');
     sel.innerHTML = App.opcionesPuntos(API.todos(), App.parametro('id'));
@@ -308,6 +337,7 @@ window.Paginas = (() => {
     cargar();
   }
 
+  // Configuración de residuos aceptados por cada centro.
   function AdmResiduos() {
     const sel = $('punto'); const caja = $('tipos');
     sel.innerHTML = App.opcionesPuntos(API.todos(), App.parametro('id'));
@@ -337,6 +367,8 @@ window.Paginas = (() => {
     pintar();
   }
 
+  // Edición de horarios por día para cada centro de acopio.
+  // Valida que cada horario tenga apertura, cierre y que la hora de cierre sea mayor que la de apertura.
   function AdmHorarios() {
     const sel = $('punto'); const tb = $('tbody');
     sel.innerHTML = App.opcionesPuntos(API.todos(), App.parametro('id'));
@@ -374,6 +406,8 @@ window.Paginas = (() => {
     pintar();
   }
 
+  // Administración de ubicación geográfica de cada punto.
+  // Controla los datos físicos del centro y actualiza la vista previa del mapa en tiempo real.
   function AdmUbicacion() {
     const sel = $('punto'); const f = $('form-ubicacion'); const mapa = $('mapa');
     sel.innerHTML = App.opcionesPuntos(API.todos(), App.parametro('id'));
@@ -409,6 +443,8 @@ window.Paginas = (() => {
     cargar();
   }
 
+  // Gestión de reportes de usuarios.
+  // Permite filtrar, consultar, dar de alta y eliminar incidencias reportadas sobre ciertos puntos.
   function AdmReportes() {
     function pintar() {
       const est = $('estado').value; const q = API.norm($('q').value);
