@@ -12,7 +12,7 @@ Object.assign(window.Paginas, (() => {
     $('form-inicio').addEventListener('submit', (e) => {
       e.preventDefault();
       const q = $('q-inicio').value.trim();
-      location.href = 'Buscar.html' + (q ? '?q=' + encodeURIComponent(q) : '');
+      location.href = '../usuarios/Buscar.html' + (q ? '?q=' + encodeURIComponent(q) : '');
     });
     $('num-puntos').textContent = API.verificados().length;
   }
@@ -53,7 +53,7 @@ Object.assign(window.Paginas, (() => {
       const session = API.sesion();
       if (!session) throw new Error('no se pudo crear tu puto perfil de mierda');
       const next = App.parametro('next');
-      const valido = next && /^[A-Za-z]+\.html(\?[\w=&%.-]*)?$/.test(next);
+      const valido = next && /^(?:\.\.\/(?:admin|usuarios)\/)?[A-Za-z]+\.html(?:\?[\w=&%.-]*)?$/.test(next);
       location.href = valido ? next : App.menuPorRol(session.rol);
     } catch (error) {
       console.error(error);

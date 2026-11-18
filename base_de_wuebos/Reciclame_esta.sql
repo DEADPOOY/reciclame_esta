@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE IF NOT EXISTS sesions (
   token_hash CHAR(64) NOT NULL PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
   expires_at DATETIME NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS reportes (
   INDEX idx_reportes_usuario (user_id),
   INDEX idx_reportes_estado (estado),
   CONSTRAINT fk_reportes_punto FOREIGN KEY (punto_id) REFERENCES puntos(id) ON DELETE SET NULL,
-  CONSTRAINT fk_reportes_usuario FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  CONSTRAINT fk_reportes_usuario FOREIGN KEY (user_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS bitacora (
@@ -72,5 +72,5 @@ CREATE TABLE IF NOT EXISTS bitacora (
   accion VARCHAR(120) NOT NULL,
   detalle VARCHAR(500) NOT NULL,
   INDEX idx_bitacora_fecha (fecha),
-  CONSTRAINT fk_bitacora_admin FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
+  CONSTRAINT fk_bitacora_admin FOREIGN KEY (admin_id) REFERENCES usuarios(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

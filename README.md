@@ -22,68 +22,27 @@ los datos usados dentro del proyecto no son reales y estan dentro de
 - datos_de_wuebos
 
 Ejecutar con:
-  mysql -h 127.0.0.1 -u reciclatech -p091119 < bd/datos_ejemplo.sql
+  mysql -h 127.0.0.1 -u reciclame_esta -p reciclame_esta < base_de_wuebos/Reciclame_esta.sql
   o desde dentro de MySQL:
-  SOURCE /ruta/al/proyecto/bd/datos_ejemplo.sql;
+  SOURCE /ruta/al/proyecto/base_de_wuebos/Reciclame_esta.sql;
 
 - actualizacion del 16/11/26
     la parte pricipal de los html son funcionales y realmente sirven agregue el js de paginas
 
 
-## JAVA SCRIPT
+## JavaScript y ejecución
 
-- *pagina.js*, *datos.js*, *app.js*
--- -------------------------------------------------------------
+Los archivos JavaScript se encuentran en `js_perrones/`. Cada HTML carga `datos.js`,
+`app.js`, `validaciones.js` y el controlador correspondiente:
 
-### paginas.js
-- el archivo pagina.js contiene la logica y el comportamiento que deberia de hacer los html *espere un poco antes de buscar este archivo*
-
-#### Para qué sirve
-
-- Se ejecuta según la propiedad data-pagina del <"body"> de cada HTML.
-- Conecta los formularios y botones con las funciones de API y App.
-- Valida datos introducidos por usuarios y administradores.
-- Genera tablas, tarjetas, resultados y detalles dinámicamente.
-- Controla búsquedas, reportes, sesiones y administración.
-
-Expone un objeto global llamado Paginas, con una función por pantalla.
-
-También incluye:
-
-- Consulta: consulta y visualiza puntos.
-- Buscar: muestra resultados y filtros.
-- Filtro: permite filtrar por tipo de residuo.
-- Punto: muestra la información detallada de un centro.
-- Horarios: consulta horarios.
-- Reporte: envía una incidencia sobre un centro.
-
-#### Funciones administrativas
-
-- MenuAdmin: muestra estadísticas y la bitácora.
-- AdmPuntos: crea, edita y elimina puntos.
-- Ficha: verifica o revoca la ficha oficial de un punto.
-- AdmResiduos: administra los residuos aceptados.
-- AdmHorarios: configura los horarios.
-- AdmUbicacion: administra dirección y coordenadas.
-- AdmReportes: revisa, da de alta o elimina reportes.
-
-En resumen, este archivo es el **controlador principal de todas las vistas** de la aplicación.
-
- al principio tenia pensado que dejaria un script directamente solo con eso pero la verdad es que me confundia un chingo y cuando sucedia un error me perdia un chingo por eso quedo dividido en 3
-
-disculpen aun no se como mandar a vinculos asi que dejare el nombre exacto pero hey de algo me va a servir aprender hacer tablas
-
-| *Archivo* | *Descripcion* |
+| Archivo | Función |
 | --- | --- |
-| `paginas_pa_jodidos.js`| no hay mucho que explicar ya esta explicado pero esto es para el publico general usuarios sin login |
-| `paginas_pa_admins.js` | lo mismo no hay muchoq ue explicar pero esto controla la parte de los admins  |
-| `paginas_pa_mierdausuarios.js` | alch me mame con el nombre XD pero ni pedo es lo mismo pero gestiona las de los usuarios :3 |
+| `paginas_pa_jodidos.js` | Inicio, registro e inicio de sesión |
+| `paginas_pa_mierdausuarios.js` | Búsqueda, consulta, horarios, reportes y menú de usuario |
+| `paginas_pa_admins.js` | Panel y pantallas de administración |
+| `validaciones.js` | Validación de formularios |
 
-antes de continuar tuve que cambiar el nombre de la carpeta de js porque cuando agregue nuevos se me hacia muy tedioso estar escribiendo todo de nuez
-
-### datos.js
-datos por dios datos digamos que es aca lo mero bueno y lo cabron porque son los datos que se necesitan usar en la pagina web directos haciendo mejor su funcionamiento aparte apa eso les va a ayudar para las apis en postman es para ver si si jala o nomas puro vendehumo alch
-
-### app.js
-*** matenme porfavor ***
-bueno vamos a lo que es directamente esta madre es cosas utiles para el mapita
+La interfaz consume una API HTTP en rutas `/api/*` (incluye `/api/bootstrap`,
+autenticación, puntos y reportes). Este repositorio contiene el esquema SQL y el
+cliente web, pero no incluye el servidor que implementa esa API; para usar las
+funciones con datos hace falta ejecutar ese servicio en el mismo origen que la web.

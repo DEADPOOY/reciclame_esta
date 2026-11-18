@@ -1,7 +1,7 @@
 //vamos a ello
 
-window.paginas = window.paginas || {};
-object.assign(window.paginas, (() => {
+window.Paginas = window.Paginas || {};
+Object.assign(window.Paginas, (() => {
     const $ = (id) => document.getElementById(id);
     const E = App.esc;
     /* ADMINIS DE DISC XD
@@ -14,8 +14,8 @@ object.assign(window.paginas, (() => {
     function MenuAdmin(){
         const pts = API.todos();
         $('s-puntos').textContent = pts.length;
-        $('s-reportes').textContent = API.reportes().filter((r) => r.estado === 'nuevo').length;
-        $('fichas').textContent = pts.filter((p) => p.ficha.estado !== 'verificada').length;
+        $('s-reportes').textContent = API.reportes().filter((r) => r.estado === 'Nuevo').length;
+        $('s-fichas').textContent = pts.filter((p) => p.ficha.estado !== 'verificada').length;
         const b = API.bitacora().slice(0, 8);
         $('bitacora').textContent = b.length
             ? '<div class = "tabla-wrap"><table><thead><tr><th>Fecha</th><th>Administrador</th><th>Acción</th><th>Detalle</th></tr></thead><tbody>' +
@@ -176,22 +176,24 @@ object.assign(window.paginas, (() => {
     function cargar() {
       const p = API.punto(sel.value); App.limpiarMarcas(f);
       f.calle.value = p ? p.calle : ''; f.colonia.value = p ? p.colonia : ''; f.alcaldia.value = p ? p.alcaldia : '';
-      f.cp.value = p && API.tieneUbicacion(p) ? p.cp : '';
+      f.cp.value = p ? p.cp || '' : '';
       vista();
     }
     function vista() {
-      const lat = parseFloat(f.lat.value); const lng = parseFloat(f.lng.value);
-      mapa.src = App.urlMapa(isNaN(lat) || isNaN(lng) ? null : { lat, lng });
+      const punto = {
+        cp: f.cp.value.trim(),
+        alcaldia: f.alcaldia.value
+      };
+      mapa.src = App.urlMapa(API.tieneUbicacion(punto) ? punto : null);
     }
     sel.addEventListener('change', cargar);
-    f.lat.addEventListener('change', vista); f.lng.addEventListener('change', vista);
+    f.cp.addEventListener('input', vista); f.alcaldia.addEventListener('change', vista);
     f.addEventListener('submit', (e) => {
       e.preventDefault();
-      const coords = Validaciones.ubicacion(sel, f);
-      if (!coords) return;
+      if (!Validaciones.ubicacion(sel, f)) return;
       App.ejecutar(async () => {
         await API.actualizarPunto(sel.value, { calle: f.calle.value.trim(), colonia: f.colonia.value.trim(), alcaldia: f.alcaldia.value,
-          cp: f.cp.value.trim(), lat: coords.lat, lng: coords.lng }, 'Ubicación actualizada');
+          cp: f.cp.value.trim() }, 'Ubicación actualizada');
         App.aviso('Ubicación guardada.', 'ok'); cargar();
       });
     });

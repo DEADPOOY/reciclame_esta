@@ -1,10 +1,10 @@
-const API = (() => {
+window.API = (() => {
     // Constantes principales
     const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
     const NOMBRE_DIA = { domingo: 'Domingo', lunes: 'Lunes', martes: 'Martes', miércoles: 'Miércoles', jueves: 'Jueves', viernes: 'Viernes', sábado: 'Sábado' };
     const ALCALDIAS = ['Álvaro Obregón', 'Azcapotzalco', 'Benito Juárez', 'Coyoacán', 'Cuajimalpa de Morelos', 'Cuauhtémoc', 'Gustavo A. Madero', 'Iztacalco', 'Iztapalapa', 'La Magdalena Contreras', 'Miguel Hidalgo', 'Milpa Alta', 'Tláhuac', 'Tlalpan', 'Venustiano Carranza', 'Xochimilco'];
     const MOTIVOS = ['informacion incorrecta', 'Centro cerrado', 'Centro no existe', 'Centro duplicado', 'Otro motivo'];
-    let datos = {sesion: null, puntos: [], reportes: [], bitacora: []};
+    let datos = {sesion: null, puntos: [], residuos: [], reportes: [], bitacora: []};
     const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
     
     async function request(url, options = {}) {
@@ -27,20 +27,32 @@ const API = (() => {
     }
 
     async function refresh() {
-        datos = await request('/api/bootstrap');
+        const resultado = await request('/api/bootstrap');
+        if (!resultado || typeof resultado !== 'object') {
+            throw new Error('La API no devolvió datos iniciales válidos.');
+        }
+        datos = {
+            ...datos,
+            ...resultado,
+            sesion: resultado.sesion ?? resultado.session ?? null,
+            residuos: Array.isArray(resultado.residuos) ? resultado.residuos : [],
+            puntos: Array.isArray(resultado.puntos) ? resultado.puntos : [],
+            reportes: Array.isArray(resultado.reportes) ? resultado.reportes : [],
+            bitacora: Array.isArray(resultado.bitacora) ? resultado.bitacora : []
+        };
         return datos;
     }
 
     async function registrar(usuario) {
-        datos = await request('/api/auth/register', {method: 'POST', body: usuario});
+        const resultado = await request('/api/auth/register', {method: 'POST', body: usuario}) || {};
         await refresh();
-        return resultado.sesion;
+        return datos.sesion || resultado.sesion || resultado.session || null;
     }
 
     async function login(credenciales) {
-        const resultado = await request('/api/auth/login', {method: 'POST', body: credenciales});
+        const resultado = await request('/api/auth/login', {method: 'POST', body: credenciales}) || {};
         await refresh();
-        return resultado.sesion;
+        return datos.sesion || resultado.sesion || resultado.session || null;
     }
 
     async function cerrarSesion() {
@@ -77,10 +89,10 @@ const API = (() => {
     const residuos = () => datos.residuos;
     const reportes = () => datos.reportes;
     const bitacora = () => datos.bitacora;
-    const sesion = () => datos.session;
+    const sesion = () => datos.sesion;
     const nombreResiduo = (id) => (residuos().find((x) => x.id === Number(id)) || { nombre: '—' }).nombre;
     const dirCompleta = (p) => [p.calle, p.colonia, p.alcaldia, p.cp ? 'C.P. ' + p.cp : '', 'CDMX'].filter(Boolean).join(', ');
-    const tieneUbicacion = (p) => typeof p.cp === 'number';
+    const tieneUbicacion = (p) => /^\d{5}$/.test(String(p.cp || '').trim());
 
     async function guardarPunto(punto, idExistente) {
         const resultado = idExistente
@@ -90,8 +102,11 @@ const API = (() => {
     }
 
     async function actualizarPunto(id, cambios, accion) {
-        const residuo = await mutate('/api/admin/residuos', 'POST', { nombre });
-        return { ok: true, residuo };
+        return mutate('/api/admin/puntos/' + id, 'PUT', cambios);
+    }
+
+    async function agregarResiduo(nombre) {
+        return mutate('/api/admin/residuos', 'POST', { nombre: nombre.trim() });
     }
 
     async function eliminarPunto(id) {

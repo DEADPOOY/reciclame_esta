@@ -8,7 +8,16 @@ const App = (() => {
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const parametro = (n) => new URLSearchParams(location.search).get(n);
   const archivoActual = () => location.pathname.split('/').pop() || 'Index.html';
-  const menuPorRol = (rol) => (rol === 'admin' ? 'MenuAdmin.html' : 'MenuUsuario.html');
+  const seccionActual = () => location.pathname.split('/').slice(-2, -1)[0];
+  const enSeccion = (seccion, archivo) => seccionActual() === seccion
+    ? archivo
+    : '../' + seccion + '/' + archivo;
+  const rutaPublica = (archivo) => enSeccion('publico', archivo);
+  const rutaUsuario = (archivo) => enSeccion('usuarios', archivo);
+  const rutaAdmin = (archivo) => enSeccion('admin', archivo);
+  const menuPorRol = (rol) => rol === 'admin'
+    ? rutaAdmin('MenuAdmin.html')
+    : rutaUsuario('MenuUsuario.html');
 
   // avisos directos mi pa
   function aviso(msg, tipo) {
@@ -34,7 +43,11 @@ const App = (() => {
     if (acceso === 'invitado' && s) { location.replace(menuPorRol(s.rol)); return false; }
     if ((acceso === 'usuario' || acceso === 'admin') && !s) {
       avisoDiferido('Inicia sesión para continuar.', 'error');
-      location.replace('Login.html?next=' + encodeURIComponent(archivoActual() + location.search));
+      const seccion = seccionActual();
+      const destino = seccion === 'publico'
+        ? archivoActual() + location.search
+        : '../' + seccion + '/' + archivoActual() + location.search;
+      location.replace(rutaPublica('Login.html') + '?next=' + encodeURIComponent(destino));
       return false;
     }
     if (acceso === 'usuario' && s.rol !== 'usuario') { avisoDiferido('Esa sección es solo para usuarios wuebos puto.', 'error'); location.replace(menuPorRol(s.rol)); return false; }
@@ -49,19 +62,21 @@ const App = (() => {
   function pintarCabecera(s, activo) {
     let nav; let acc;
     if (s && s.rol === 'admin') {
-      nav = enlace('MenuAdmin.html', 'Panel de administración', activo) + enlace('Consulta.html', 'Ver sitio público', activo);
+      nav = enlace(menuPorRol('admin'), 'Panel de administración', activo) +
+        enlace(rutaUsuario('Consulta.html'), 'Ver sitio público', activo);
       acc = '<span class="saludo">Administrador</span><button class="btn sec" id="btn-salir" type="button">Cerrar sesión</button>';
     } else if (s) {
-      nav = enlace('MenuUsuario.html', 'Inicio', activo) + enlace('Consulta.html', 'Centros', activo) +
-        enlace('Buscar.html', 'Buscar puntos', activo) + enlace('Horarios.html', 'Horarios', activo) +
-        enlace('Reporte.html', 'Reportar', activo);
+      nav = enlace(rutaUsuario('MenuUsuario.html'), 'Inicio', activo) + enlace(rutaUsuario('Consulta.html'), 'Centros', activo) +
+        enlace(rutaUsuario('Buscar.html'), 'Buscar puntos', activo) + enlace(rutaUsuario('Horarios.html'), 'Horarios', activo) +
+        enlace(rutaUsuario('Reporte.html'), 'Reportar', activo);
       acc = '<span class="saludo">Hola, ' + esc(s.nombre.split(' ')[0]) + '</span><button class="btn sec" id="btn-salir" type="button">Cerrar sesión</button>';
     } else {
-      nav = enlace('Index.html', 'Inicio', activo) + enlace('Buscar.html', 'Buscar puntos', activo) +
-        enlace('Consulta.html', 'Centros de acopio', activo) + enlace('Horarios.html', 'Horarios', activo);
-      acc = '<a class="btn sec" href="Login.html">Iniciar sesión</a><a class="btn" href="Registro.html">Registrarse</a>';
+      nav = enlace(rutaPublica('Index.html'), 'Inicio', activo) + enlace(rutaUsuario('Buscar.html'), 'Buscar puntos', activo) +
+        enlace(rutaUsuario('Consulta.html'), 'Centros de acopio', activo) + enlace(rutaUsuario('Horarios.html'), 'Horarios', activo);
+      acc = '<a class="btn sec" href="' + rutaPublica('Login.html') + '">Iniciar sesión</a><a class="btn" href="' +
+        rutaPublica('Registro.html') + '">Registrarse</a>';
     }
-    const destino = s ? menuPorRol(s.rol) : 'Index.html';
+    const destino = s ? menuPorRol(s.rol) : rutaPublica('Index.html');
     return '<div class="cabecera-in"><a class="logo" href="' + destino + '"><span class="logo-marca" aria-hidden="true">R</span>ReciclaTech</a>' +
       '<button class="menu-toggle" id="btn-menu" type="button" aria-label="Abrir menú" aria-expanded="false">Menú</button>' +
       '<nav class="nav" aria-label="Principal">' + nav + '</nav><div class="acciones">' + acc + '</div></div>';
@@ -72,7 +87,7 @@ const App = (() => {
       ['AdmResiduos.html', 'Tipos de residuos'], ['AdmHorarios.html', 'Horarios'], ['AdmUbicacion.html', 'Ubicación'],
       ['AdmReportes.html', 'Reportes']];
     return '<nav aria-label="Administración">' + items.map((i) =>
-      '<a href="' + i[0] + '"' + (activo === i[0] ? ' class="activo" aria-current="page"' : '') + '>' + i[1] + '</a>').join('') + '</nav>';
+      '<a href="' + rutaAdmin(i[0]) + '"' + (activo === i[0] ? ' class="activo" aria-current="page"' : '') + '>' + i[1] + '</a>').join('') + '</nav>';
   }
 
   function armarLayout() {
@@ -86,7 +101,7 @@ const App = (() => {
     const salir = document.getElementById('btn-salir');
     if (salir) salir.addEventListener('click', () => ejecutar(async () => {
       await API.cerrarSesion();
-      location.href = 'Index.html';
+      location.href = rutaPublica('Index.html');
     }));
     const tog = document.getElementById('btn-menu');
     if (tog) tog.addEventListener('click', () => {
@@ -101,12 +116,16 @@ const App = (() => {
   const badgeFicha = (p) => p.ficha.estado === 'verificada'
     ? '<span class="insignia ok">Ficha verificada</span>' : '<span class="insignia pend">Ficha pendiente</span>';
   const urlMapa = (p) => {
-    if (!p || !API.tieneUbicacion(p)) return 'https://www.openstreetmap.org/export/embed.html?bbox=-99.36%2C19.05%2C-98.95%2C19.60&layer=mapnik';
-    const dx = 0.008; const dy = 0.005;
-    return 'https://www.openstreetmap.org/export/embed.html?bbox=' + [p.lng - dx, p.lat - dy, p.lng + dx, p.lat + dy].join('%2C') +
-      '&layer=mapnik&marker=' + p.lat + '%2C' + p.lng;
+    if (!p || !API.tieneUbicacion(p)) {
+      return 'https://maps.google.com/maps?q=' + encodeURIComponent('Ciudad de México') + '&output=embed';
+    }
+    const consulta = p.cp + ', Ciudad de México';
+    return 'https://maps.google.com/maps?q=' + encodeURIComponent(consulta) + '&output=embed';
   };
-  const urlMapaGrande = (p) => 'https://www.openstreetmap.org/?mlat=' + p.lat + '&mlon=' + p.lng + '#map=17/' + p.lat + '/' + p.lng;
+  const urlMapaGrande = (p) => {
+    const consulta = p.cp + ', Ciudad de México';
+    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(consulta);
+  };
   const tablaHorario = (p) => '<div class="tabla-wrap"><table><thead><tr><th>Día</th><th>Horario de atención</th></tr></thead><tbody>' +
     API.DIAS.map((d) => '<tr><td>' + API.NOMBRE_DIA[d] + '</td><td>' + API.fmtDia(p.horarios[d]) + '</td></tr>').join('') + '</tbody></table></div>';
   const opcionesPuntos = (lista, sel, ph) => '<option value="">' + esc(ph || 'Seleccione un punto de recepción') + '</option>' +
