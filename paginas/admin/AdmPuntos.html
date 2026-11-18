@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestionar puntos de recepción · ReciclaTech</title>
+<link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body data-pagina="AdmPuntos" data-acceso="admin" data-menu="AdmPuntos.html">
+<a class="sr-only" href="#principal">Saltar al contenido</a>
+<header id="cabecera"></header>
+<div class="cuerpo-admin"><aside id="menu-admin"></aside><main class="contenido" id="principal">
+
+<h1>Gestionar puntos de recepción</h1>
+<p><button class="btn" id="nuevo" type="button">+ Nuevo punto</button></p>
+<div class="dos-col">
+  <div class="tabla-wrap"><table><thead><tr><th>Nombre</th><th>Alcaldía</th><th>Ficha</th><th>Acciones</th></tr></thead><tbody id="tbody"></tbody></table></div>
+  <section class="tarjeta panel">
+    <h2 id="titulo-form">Nuevo punto</h2>
+    <form id="form-punto" novalidate>
+<div class="campo"><label for="nombre">Nombre</label><input type="text" id="nombre" name="nombre" placeholder="Nombre del punto" ><div class="error-campo" aria-live="polite"></div></div><div class="campo"><label for="calle">Dirección</label><input type="text" id="calle" name="calle" placeholder="Calle y número" ><div class="error-campo" aria-live="polite"></div></div><div class="campo"><label for="alcaldia">Alcaldía</label><select id="alcaldia" name="alcaldia" ></select><div class="error-campo" aria-live="polite"></div></div>
+      <div class="fila-botones"><button class="btn" type="submit">Guardar</button><button class="btn sec" id="cancelar" type="button">Cancelar</button></div>
+      <p class="suave chico" style="margin-top:1rem">La ubicación exacta, los horarios y los tipos de residuos se registran en sus secciones. Los cambios quedan registrados para su trazabilidad.</p>
+    </form>
+  </section>
+</div>
+
+</main></div>
+<footer id="pie"></footer>
+<script src="../../js/datos.js"></script>
+<script src="../../js/app.js"></script>
+<script src="../../js/validaciones.js"></script>
+<script src="../../js/paginas_pa_admins.js"></script>
+</body>
+</html>

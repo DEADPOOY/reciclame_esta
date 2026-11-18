@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buscar puntos · ReciclaTech</title>
+<link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body data-pagina="Buscar" data-acceso="libre" data-menu="Buscar.html">
+<a class="sr-only" href="#principal">Saltar al contenido</a>
+<header id="cabecera"></header>
+<main class="contenido" id="principal">
+
+<h1>Buscar puntos de recepción</h1>
+<form id="form-buscar" role="search" style="display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:.6rem">
+  <label class="sr-only" for="q">Criterio de búsqueda</label>
+  <input type="search" id="q" placeholder="Criterio de búsqueda (nombre, colonia, alcaldía)" style="flex:1 1 320px;width:auto">
+  <button class="btn" type="submit">Buscar</button>
+  <button class="btn sec" id="btn-filtro" type="button">Filtrar por tipo de dispositivo</button>
+</form>
+<div id="filtros-activos" style="margin-bottom:.6rem"></div>
+<h2 id="cuenta">Resultados</h2>
+<div id="resultados" class="lista-puntos"></div>
+
+</main>
+<script src="../../js/datos.js"></script>
+<script src="../../js/app.js"></script>
+<script src="../../js/validaciones.js"></script>
+<script src="../../js/paginas_usuarios.js"></script>
+</body>
+</html>

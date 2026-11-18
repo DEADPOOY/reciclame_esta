@@ -19,30 +19,114 @@ directamente residuos electronicos y esto ayuda a que sepan a donde llevarlos
 Estos NO son centros reales, son datos para probar el sitio.
 los datos usados dentro del proyecto no son reales y estan dentro de
 
-- datos_de_wuebos
+- datos_de_ejemplo
 
 Ejecutar con:
-  mysql -h 127.0.0.1 -u reciclame_esta -p reciclame_esta < base_de_wuebos/Reciclame_esta.sql
+  mysql -h 127.0.0.1 -u reciclatech -p091119 < bd/datos_ejemplo.sql
   o desde dentro de MySQL:
-  SOURCE /ruta/al/proyecto/base_de_wuebos/Reciclame_esta.sql;
+  SOURCE /ruta/al/proyecto/bd/datos_ejemplo.sql;
 
 - actualizacion del 16/11/26
     la parte pricipal de los html son funcionales y realmente sirven agregue el js de paginas
 
 
-## JavaScript y ejecución
+## JAVA SCRIPT
 
-Los archivos JavaScript se encuentran en `js_perrones/`. Cada HTML carga `datos.js`,
-`app.js`, `validaciones.js` y el controlador correspondiente:
+- *pagina.js*, *datos.js*, *app.js*
+-- -------------------------------------------------------------
 
-| Archivo | Función |
+### paginas.js
+- el archivo pagina.js contiene la logica y el comportamiento que deberia de hacer los html *espere un poco antes de buscar este archivo*
+
+#### Para qué sirve
+
+- Se ejecuta según la propiedad data-pagina del <"body"> de cada HTML.
+- Conecta los formularios y botones con las funciones de API y App.
+- Valida datos introducidos por usuarios y administradores.
+- Genera tablas, tarjetas, resultados y detalles dinámicamente.
+- Controla búsquedas, reportes, sesiones y administración.
+
+Expone un objeto global llamado Paginas, con una función por pantalla.
+
+También incluye:
+
+- Consulta: consulta y visualiza puntos.
+- Buscar: muestra resultados y filtros.
+- Filtro: permite filtrar por tipo de residuo.
+- Punto: muestra la información detallada de un centro.
+- Horarios: consulta horarios.
+- Reporte: envía una incidencia sobre un centro.
+
+#### Funciones administrativas
+
+- MenuAdmin: muestra estadísticas y la bitácora.
+- AdmPuntos: crea, edita y elimina puntos.
+- Ficha: verifica o revoca la ficha oficial de un punto.
+- AdmResiduos: administra los residuos aceptados.
+- AdmHorarios: configura los horarios.
+- AdmUbicacion: administra dirección y coordenadas.
+- AdmReportes: revisa, da de alta o elimina reportes.
+
+En resumen, este archivo es el **controlador principal de todas las vistas** de la aplicación.
+
+ al principio tenia pensado que dejaria un script directamente solo con eso pero la verdad es que me confundia un chingo y cuando sucedia un error me perdia un chingo por eso quedo dividido en 3
+
+disculpen aun no se como mandar a vinculos asi que dejare el nombre exacto pero hey de algo me va a servir aprender hacer tablas
+
+| *Archivo* | *Descripcion* |
 | --- | --- |
-| `paginas_pa_jodidos.js` | Inicio, registro e inicio de sesión |
-| `paginas_pa_mierdausuarios.js` | Búsqueda, consulta, horarios, reportes y menú de usuario |
-| `paginas_pa_admins.js` | Panel y pantallas de administración |
-| `validaciones.js` | Validación de formularios |
+| `paginas_publicas.js`| no hay mucho que explicar ya esta explicado pero esto es para el publico general usuarios sin login |
+| `paginas_pa_admins.js` | lo mismo no hay muchoq ue explicar pero esto controla la parte de los admins  |
+| `paginas_usuarios.js` | alch me mame con el nombre XD pero ni pedo es lo mismo pero gestiona las de los usuarios :3 |
 
-La interfaz consume una API HTTP en rutas `/api/*` (incluye `/api/bootstrap`,
-autenticación, puntos y reportes). Este repositorio contiene el esquema SQL y el
-cliente web, pero no incluye el servidor que implementa esa API; para usar las
-funciones con datos hace falta ejecutar ese servicio en el mismo origen que la web.
+antes de continuar tuve que cambiar el nombre de la carpeta de js porque cuando agregue nuevos se me hacia muy tedioso estar escribiendo todo de nuez
+
+### datos.js
+datos por dios datos digamos que es aca lo mero bueno y lo cabron porque son los datos que se necesitan usar en la pagina web directos haciendo mejor su funcionamiento aparte apa eso les va a ayudar para las apis en postman es para ver si si jala o nomas puro vendehumo alch
+
+### app.js
+*** matenme porfavor ***
+bueno vamos a lo que es directamente esta madre es cosas utiles para las paginas como el mapa y asi mero jejeje
+
+ya dormi asi que sigamos
+
+### validaciones.js
+ahora si esta madre es p que no puedan hacer sus mamadas y sobre todo que jale chido la base de datos no quiero que me la deshagan segun yo las validaciones deberia de ser aca lo cabron porque alch sin eso se me jode todo jejejejeje
+
+## el pinchi server
+
+ps hay dos archivos vamos directo esta madre
+
+| Archivo | Detalles |
+| --- | --- |
+| `server.js` | no hay mucho que explicar pero el funcionaiento principal es que son directamente parametros para llamar y que funcionen de manera correcta las paginas al igual que si tienen un fallo lo puedan decir abiertamente |
+| `base_datos.js` | es ahora si que la base de datos es para que la llame y funcione que busque todo lo necesario y lo traiga al frente |
+
+y con esto marcariamos el punto final de este bonito proyecto ya como ultimo lo ultimo son pequeños cambios que are talvez muy necesarios pero al final ya estan casi todos hechos
+
+### Iniciar el servidor local
+
+Se necesita Node.js 18 o posterior y MySQL. Desde la carpeta principal del proyecto:
+
+1. Inicializa MySQL con el esquema y el usuario de la aplicación:
+
+   ```bash
+   mysql -u root -p < base_de_datos/Reciclame_esta.sql
+   ```
+
+2. Instala las dependencias e inicia el servidor:
+
+   ```bash
+   npm install
+   npm start
+   ```
+
+   En el primer inicio, el servidor pregunta los datos de conexión a MySQL y crea `.env` en la carpeta principal. Los valores sugeridos corresponden al usuario creado por el SQL; introduce la contraseña configurada en MySQL.
+
+3. Abre <http://localhost:3000>. Para cargar los datos ficticios de prueba, en otra terminal ejecuta:
+
+   ```bash
+   mysql -h localhost -u reciclame_esta -p reciclame_esta < base_de_datos/datos_de_ejemplo.sql
+   ```
+
+No subas `.env` a Git: contiene la contraseña de MySQL.

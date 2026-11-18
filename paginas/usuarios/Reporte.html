@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generar reporte · ReciclaTech</title>
+<link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body data-pagina="Reporte" data-acceso="usuario" data-menu="Reporte.html">
+<a class="sr-only" href="#principal">Saltar al contenido</a>
+<header id="cabecera"></header>
+<main class="contenido" id="principal">
+
+<h1>Generar reporte</h1>
+<div class="dos-col">
+  <section class="tarjeta">
+    <form id="form-reporte" novalidate>
+<div class="campo"><label for="punto">Centro de acopio</label><select id="punto" name="punto" ></select><div class="error-campo" aria-live="polite"></div></div><div class="campo"><label for="motivo">Motivo</label><select id="motivo" name="motivo" ></select><div class="error-campo" aria-live="polite"></div></div><div class="campo"><label for="descripcion">Descripción</label><textarea id="descripcion" name="descripcion" placeholder="Describe lo ocurrido en el centro de acopio"></textarea><div class="error-campo" aria-live="polite"></div></div>
+      <div class="fila-botones"><button class="btn" type="submit">Enviar reporte</button><button class="btn sec" type="reset">Cancelar</button></div>
+    </form>
+  </section>
+  <aside class="tarjeta panel"><h3>Antes de enviar</h3><p class="suave chico">Tu reporte será revisado por un administrador, quien podrá darlo de alta o eliminarlo.</p></aside>
+</div>
+
+</main>
+<footer id="pie"></footer>
+<script src="../../js/datos.js"></script>
+<script src="../../js/app.js"></script>
+<script src="../../js/validaciones.js"></script>
+<script src="../../js/paginas_usuarios.js"></script>
+</body>
+</html>
