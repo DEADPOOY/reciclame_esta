@@ -1,19 +1,3 @@
-/*
-Puntos y residuos
-- todos() y verificados(): listas de puntos.
-- buscar(): busca por nombre, dirección, colonia, alcaldía o tipos de residuo.
-- guardarPunto() y actualizarPunto(): crean o modifican centros.
-- eliminarPunto(): elimina un centro.
-- agregarResiduo(): agrega un tipo de residuo.
-- dirCompleta() y tieneUbicacion(): construyen direcciones y verifican coordenadas.
-
-Reportes y administración
-- crearReporte(): registra un reporte.
-- darDeAltaReporte() y eliminarReporte(): administran reportes.
-- reportes() y bitacora(): consultan reportes y cambios registrados.
-
-Los datos reales no están escritos dentro de este archivo; permanecen en MySQL y se cargan desde el servidor cuando se abre o actualiza la aplicación.*/
-
 const API = (() => {
     // Constantes principales
     const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];

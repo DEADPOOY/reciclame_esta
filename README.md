@@ -82,3 +82,8 @@ disculpen aun no se como mandar a vinculos asi que dejare el nombre exacto pero 
 antes de continuar tuve que cambiar el nombre de la carpeta de js porque cuando agregue nuevos se me hacia muy tedioso estar escribiendo todo de nuez
 
 ### datos.js
+datos por dios datos digamos que es aca lo mero bueno y lo cabron porque son los datos que se necesitan usar en la pagina web directos haciendo mejor su funcionamiento aparte apa eso les va a ayudar para las apis en postman es para ver si si jala o nomas puro vendehumo alch
+
+### app.js
+*** matenme porfavor ***
+bueno vamos a lo que es directamente esta madre es cosas utiles para el mapita
