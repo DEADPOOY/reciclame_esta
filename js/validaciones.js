@@ -104,6 +104,19 @@ const Validaciones = (() => {
     return valido;
   }
 
+  function puntoCompleto(form) {
+    let valido = marcarRequerido(form.nombre, 'Escribe el nombre del punto.');
+    valido = marcarRequerido(form.calle, 'Escribe la calle y número.') && valido;
+    valido = marcarRequerido(form.colonia, 'Escribe la colonia.') && valido;
+    valido = marcarRequerido(form.alcaldia, 'Selecciona una alcaldía.') && valido;
+    valido = marcarRequerido(form.cp, 'Escribe el código postal.') && valido;
+    if (form.cp.value.trim() && !/^\d{5}$/.test(form.cp.value.trim())) {
+      App.marcar(form.cp, 'El código postal debe tener cinco dígitos.');
+      valido = false;
+    }
+    return valido;
+  }
+
   function ficha(selector, form, puntoActual) {
     let valido = marcarRequerido(selector, 'Selecciona un punto de recepción.');
     if (!puntoActual) return null;
@@ -135,8 +148,7 @@ const Validaciones = (() => {
     return marcarRequerido(selector, 'Selecciona un punto de recepción.');
   }
 
-  function horarios(selector, tabla) {
-    if (!marcarRequerido(selector, 'Selecciona un punto de recepción.')) return null;
+  function horariosTabla(tabla) {
     const cambios = {};
     let valido = true;
     tabla.querySelectorAll('tr[data-d]').forEach((fila) => {
@@ -144,13 +156,16 @@ const Validaciones = (() => {
       const abre = fila.querySelector('.a').value;
       const cierra = fila.querySelector('.c').value;
       const cerrado = fila.querySelector('.x').checked;
-      if (!cerrado && (!abre || !cierra || abre >= cierra)) {
-        App.aviso('Completa un horario válido para cada día abierto.', 'error');
-        valido = false;
-      }
+      if (!cerrado && (!abre || !cierra || abre >= cierra)) valido = false;
       cambios[dia] = cerrado ? { abre: '', cierra: '', cerrado: true } : { abre, cierra, cerrado: false };
     });
+    if (!valido) App.aviso('Completa un horario válido para cada día abierto.', 'error');
     return valido ? cambios : null;
+  }
+
+  function horarios(selector, tabla) {
+    if (!marcarRequerido(selector, 'Selecciona un punto de recepción.')) return null;
+    return horariosTabla(tabla);
   }
 
   function ubicacion(selector, form) {
@@ -166,5 +181,5 @@ const Validaciones = (() => {
     return valido;
   }
 
-  return { prepararRegistro, registro, login, reporte, punto, ficha, nuevoResiduo, guardarResiduos, horarios, ubicacion };
+  return { prepararRegistro, registro, login, reporte, punto, puntoCompleto, ficha, nuevoResiduo, guardarResiduos, horarios, horariosTabla, ubicacion };
 })();

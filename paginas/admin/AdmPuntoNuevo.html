@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nuevo punto de recepción · ReciclaTech</title>
+<link rel="icon" type="image/png" href="/imagenes/favicon.png">
+<link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body data-pagina="AdmPuntoNuevo" data-acceso="admin" data-menu="AdmPuntos.html">
+<a class="sr-only" href="#principal">Saltar al contenido</a>
+<header id="cabecera"></header>
+<div class="cuerpo-admin"><aside id="menu-admin"></aside><main class="contenido" id="principal">
+
+<h1 id="titulo">Nuevo punto de recepción</h1>
+<p class="suave" id="subtitulo">Completa los datos en orden. Al final guarda el punto.</p>
+
+<form id="form-punto-nuevo" class="form-lineal" novalidate>
+  <section class="tarjeta paso" aria-labelledby="paso-1">
+    <h2 id="paso-1"><span class="paso-num">1</span> Datos del punto</h2>
+    <div class="dos-col igual">
+      <div class="campo"><label for="nombre">Nombre</label><input type="text" id="nombre" name="nombre" placeholder="Nombre del punto" autocomplete="off"><div class="error-campo" aria-live="polite"></div></div>
+      <div class="campo"><label for="calle">Calle y número</label><input type="text" id="calle" name="calle" placeholder="Calle y número" autocomplete="off"><div class="error-campo" aria-live="polite"></div></div>
+    </div>
+    <div class="dos-col igual">
+      <div class="campo"><label for="colonia">Colonia</label><input type="text" id="colonia" name="colonia" placeholder="Colonia" autocomplete="off"><div class="error-campo" aria-live="polite"></div></div>
+      <div class="campo"><label for="alcaldia">Alcaldía</label><select id="alcaldia" name="alcaldia"></select><div class="error-campo" aria-live="polite"></div></div>
+    </div>
+    <div class="campo" style="max-width:260px"><label for="cp">Código postal</label><input type="text" id="cp" name="cp" placeholder="00000" inputmode="numeric" maxlength="5" autocomplete="postal-code"><div class="error-campo" aria-live="polite"></div></div>
+  </section>
+
+  <section class="tarjeta paso" aria-labelledby="paso-2">
+    <h2 id="paso-2"><span class="paso-num">2</span> Ubicación</h2>
+    <div class="dos-col igual">
+      <p class="suave">La vista previa se actualiza con el código postal. Si aún no lo tienes, puedes guardar el punto y completarlo después.</p>
+      <iframe id="mapa" class="mapa mapa-medio" title="Vista previa de la ubicación" loading="lazy"></iframe>
+    </div>
+  </section>
+
+  <section class="tarjeta paso" aria-labelledby="paso-3">
+    <h2 id="paso-3"><span class="paso-num">3</span> Horarios</h2>
+    <p class="suave chico">Marca "Cerrado" en los días que no atiendan.</p>
+    <div class="tabla-wrap"><table class="tabla-horario"><thead><tr><th>Día</th><th>Apertura</th><th>Cierre</th><th>Cerrado</th></tr></thead><tbody id="horarios-tbody"></tbody></table></div>
+  </section>
+
+  <section class="tarjeta paso" aria-labelledby="paso-4">
+    <h2 id="paso-4"><span class="paso-num">4</span> Tipos de residuos</h2>
+    <p class="suave chico">Selecciona los dispositivos que recibe el punto. Puedes cambiarlos después.</p>
+    <div id="tipos" class="rejilla c2"></div>
+  </section>
+
+  <div class="fila-botones">
+    <button class="btn" id="guardar" type="submit">Crear punto</button>
+    <a class="btn sec" href="AdmPuntos.html">Cancelar</a>
+  </div>
+  <p class="suave chico" id="nota-ficha" style="margin-top:1rem">Al crear el punto, su ficha queda pendiente. Puedes verificarla después en la sección Ficha del punto.</p>
+</form>
+
+</main></div>
+<footer id="pie"></footer>
+<script src="../../js/datos.js"></script>
+<script src="../../js/app.js"></script>
+<script src="../../js/validaciones.js"></script>
+<script src="../../js/paginas_pa_admins.js"></script>
+</body>
+</html>

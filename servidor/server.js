@@ -249,7 +249,7 @@ app.use(helmet({
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
         connectSrc: ["'self'"],
-        frameSrc: ["'self'", 'https://www.openstreetmap.org'],
+        frameSrc: ["'self'", 'https://www.openstreetmap.org', 'https://maps.google.com', 'https://www.google.com', 'https://maps.googleapis.com'],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
         formAction: ["'self'"],

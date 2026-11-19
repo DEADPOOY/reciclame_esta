@@ -25,50 +25,117 @@ Object.assign(window.Paginas, (() => {
 
     //se viene el pinche crud = crea edita y elima leer me lo paso por los huevos mis dos huevotes
     function AdmPuntos() {
-    
-    //el pinchi delete
-    const f = $('form-punto'); let editando = null;
-    f.alcaldia.innerHTML = App.opcionesLista(API.ALCALDIAS, '', 'Seleccione');
-    function tabla() {
-      const pts = API.todos();
-      $('tbody').innerHTML = pts.map((p) => '<tr><td>' + E(p.nombre) + '</td><td>' + E(p.alcaldia) + '</td><td>' + App.badgeFicha(p) +
-        '</td><td><button class="btn sec chico" data-ed="' + p.id + '" type="button">Editar</button>' +
-        '<button class="btn peligro chico" data-el="' + p.id + '" type="button">Eliminar</button></td></tr>').join('') ||
-        '<tr><td colspan="4" class="suave">No hay puntos registrados.</td></tr>';
-      $('tbody').querySelectorAll('[data-ed]').forEach((b) => b.addEventListener('click', () => cargar(Number(b.dataset.ed))));
-      $('tbody').querySelectorAll('[data-el]').forEach((b) => b.addEventListener('click', () => {
-        const p = API.punto(b.dataset.el);
-        if (confirm('vas a elimar "' + p.nombre + '"? seguro w? no se puede deshacer')) {
-          App.ejecutar(async () => {
-            await API.eliminarPunto(p.id);
-            if (editando === p.id) nuevo(); tabla(); App.aviso('El punto fue eliminado.', 'XD');
-          });
-        }
-      }));
+      function tabla() {
+        const pts = API.todos();
+        $('tbody').innerHTML = pts.map((p) => '<tr><td>' + E(p.nombre) + '</td><td>' + E(p.alcaldia) + '</td><td>' + App.badgeFicha(p) +
+          '</td><td><a class="btn sec chico" href="AdmPuntoNuevo.html?id=' + p.id + '">Editar</a>' +
+          '<button class="btn peligro chico" data-el="' + p.id + '" type="button">Eliminar</button></td></tr>').join('') ||
+          '<tr><td colspan="4" class="suave">No hay puntos registrados.</td></tr>';
+        $('tbody').querySelectorAll('[data-el]').forEach((b) => b.addEventListener('click', () => {
+          const p = API.punto(b.dataset.el);
+          if (!p) { tabla(); return; }
+          if (confirm('¿Eliminar el punto "' + p.nombre + '"? No se puede deshacer.')) {
+            App.ejecutar(async () => {
+              await API.eliminarPunto(p.id);
+              tabla(); App.aviso('El punto fue eliminado.', 'ok');
+            });
+          }
+        }));
+      }
+      tabla();
     }
 
-    //editar puntico
-    function cargar(id) {
-      const p = API.punto(id); editando = id;
-      f.nombre.value = p.nombre; f.calle.value = p.calle; f.alcaldia.value = p.alcaldia;
-      $('titulo-form').textContent = 'Editar punto'; App.limpiarMarcas(f); f.nombre.focus();
-    }
+    function AdmPuntoNuevo() {
+      const f = $('form-punto-nuevo');
+      const tb = $('horarios-tbody');
+      const tipos = $('tipos');
+      const mapa = $('mapa');
+      const guardar = $('guardar');
+      const id = App.parametro('id');
+      const editando = id ? API.punto(id) : null;
 
-    // crear otro puntico
-    function nuevo() { editando = null; f.reset(); $('titulo-form').textContent = 'Nuevo punto'; App.limpiarMarcas(f); }
-    $('nuevo').addEventListener('click', () => { nuevo(); f.nombre.focus(); });
-    $('cancelar').addEventListener('click', nuevo);
-    f.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (!Validaciones.punto(f)) return;
-      App.ejecutar(async () => {
-        await API.guardarPunto({ nombre: f.nombre.value.trim(), calle: f.calle.value.trim(), alcaldia: f.alcaldia.value }, editando);
-        App.aviso(editando ? 'Punto actualizado.' : 'Punto creado. Falta verificar que ps si exista', 'ok');
-        nuevo(); tabla();
+      if (id && !editando) {
+        App.avisoDiferido('El punto que intentas editar ya no existe.', 'error');
+        location.replace('AdmPuntos.html');
+        return;
+      }
+
+      f.alcaldia.innerHTML = App.opcionesLista(API.ALCALDIAS, editando ? editando.alcaldia : '', 'Seleccione');
+
+      const base = {};
+      API.DIAS.forEach((d) => { base[d] = { abre: '09:00', cierra: '17:00', cerrado: false }; });
+      base.sabado = { abre: '', cierra: '', cerrado: true };
+      base.domingo = { abre: '', cierra: '', cerrado: true };
+      const horarios = editando ? editando.horarios : base;
+
+      tb.innerHTML = API.DIAS.map((d) => {
+        const h = horarios[d] || base[d];
+        return '<tr data-d="' + d + '"><td>' + API.NOMBRE_DIA[d] + '</td>' +
+          '<td><input type="time" class="a" value="' + (h.abre || '') + '" aria-label="Apertura ' + API.NOMBRE_DIA[d] + '"></td>' +
+          '<td><input type="time" class="c" value="' + (h.cierra || '') + '" aria-label="Cierre ' + API.NOMBRE_DIA[d] + '"></td>' +
+          '<td><label class="check"><input type="checkbox" class="x"' + (h.cerrado ? ' checked' : '') + '> Cerrado</label></td></tr>';
+      }).join('');
+
+      tipos.innerHTML = API.residuos().map((r) => '<label class="check"><input type="checkbox" value="' + r.id + '"' +
+        (editando && editando.residuos.includes(r.id) ? ' checked' : '') + '> ' + E(r.nombre) + '</label>').join('') ||
+        '<p class="suave chico">No hay tipos de residuo registrados.</p>';
+
+      function alternarDia(fila) {
+        const cerrado = fila.querySelector('.x').checked;
+        fila.querySelectorAll('input[type="time"]').forEach((i) => { i.disabled = cerrado; });
+      }
+      tb.querySelectorAll('tr[data-d]').forEach(alternarDia);
+      tb.addEventListener('change', (e) => {
+        if (e.target.classList.contains('x')) alternarDia(e.target.closest('tr'));
       });
-    });
-    tabla();
-  }
+
+      if (editando) {
+        document.title = 'Editar punto de recepción · ReciclaTech';
+        $('titulo').textContent = 'Editar punto de recepción';
+        $('subtitulo').textContent = 'Actualiza los datos y guarda los cambios.';
+        $('nota-ficha').textContent = 'La ficha del punto se gestiona en la sección Ficha del punto.';
+        guardar.textContent = 'Guardar cambios';
+        f.nombre.value = editando.nombre;
+        f.calle.value = editando.calle;
+        f.colonia.value = editando.colonia || '';
+        f.cp.value = editando.cp || '';
+      }
+
+      function vista() {
+        const cp = f.cp.value.trim();
+        mapa.src = App.urlMapa(API.tieneUbicacion({ cp }) ? { cp } : null);
+      }
+      f.cp.addEventListener('input', vista);
+      f.alcaldia.addEventListener('change', vista);
+      vista();
+
+      f.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!Validaciones.puntoCompleto(f)) return;
+        const horariosNuevos = Validaciones.horariosTabla(tb);
+        if (!horariosNuevos) return;
+        const residuos = Array.from(tipos.querySelectorAll('input:checked')).map((i) => Number(i.value));
+        const datos = {
+          nombre: f.nombre.value.trim(),
+          calle: f.calle.value.trim(),
+          colonia: f.colonia.value.trim(),
+          alcaldia: f.alcaldia.value,
+          cp: f.cp.value.trim(),
+          horarios: horariosNuevos,
+          residuos
+        };
+        App.ejecutar(async () => {
+          guardar.disabled = true;
+          try {
+            await API.guardarPunto(datos, editando ? editando.id : null);
+            App.avisoDiferido(editando ? 'Punto actualizado.' : 'Punto creado. Ya puedes completar su ficha.', 'ok');
+            location.href = 'AdmPuntos.html';
+          } finally {
+            guardar.disabled = false;
+          }
+        });
+      });
+    }
 
   //esta miercoles es pa verificar fichas oficiales de cada puntico
   //aqui se valida la ficha, se adjunta el archivo y se cambia el estado de verificacion del centro
@@ -240,5 +307,5 @@ Object.assign(window.Paginas, (() => {
     pintar();
   }
 
-  return { MenuAdmin, AdmPuntos, Ficha, AdmResiduos, AdmHorarios, AdmUbicacion, AdmReportes };
+  return { MenuAdmin, AdmPuntos, AdmPuntoNuevo, Ficha, AdmResiduos, AdmHorarios, AdmUbicacion, AdmReportes };
 })());

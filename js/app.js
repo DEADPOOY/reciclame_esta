@@ -77,7 +77,7 @@ const App = (() => {
         rutaPublica('Registro.html') + '">Registrarse</a>';
     }
     const destino = s ? menuPorRol(s.rol) : rutaPublica('Index.html');
-    return '<div class="cabecera-in"><a class="logo" href="' + destino + '"><span class="logo-marca" aria-hidden="true">R</span>ReciclaTech</a>' +
+    return '<div class="cabecera-in"><a class="logo" href="' + destino + '" aria-label="ReciclaTech"><img class="logo-marca" src="/imagenes/logo.png" alt="" aria-hidden="true">eciclaTech</a>' +
       '<button class="menu-toggle" id="btn-menu" type="button" aria-label="Abrir menú" aria-expanded="false">Menú</button>' +
       '<nav class="nav" aria-label="Principal">' + nav + '</nav><div class="acciones">' + acc + '</div></div>';
   }
@@ -116,11 +116,8 @@ const App = (() => {
   const badgeFicha = (p) => p.ficha.estado === 'verificada'
     ? '<span class="insignia ok">Ficha verificada</span>' : '<span class="insignia pend">Ficha pendiente</span>';
   const urlMapa = (p) => {
-    if (!p || !API.tieneUbicacion(p)) {
-      return 'https://maps.google.com/maps?q=' + encodeURIComponent('Ciudad de México') + '&output=embed';
-    }
-    const consulta = p.cp + ', Ciudad de México';
-    return 'https://maps.google.com/maps?q=' + encodeURIComponent(consulta) + '&output=embed';
+    const consulta = !p || !API.tieneUbicacion(p) ? 'Ciudad de México' : p.cp + ', Ciudad de México';
+    return 'https://www.google.com/maps/embed?origin=mfe&pb=!1m2!2m1!1s' + encodeURIComponent(consulta);
   };
   const urlMapaGrande = (p) => {
     const consulta = p.cp + ', Ciudad de México';

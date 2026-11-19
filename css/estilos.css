@@ -29,10 +29,10 @@ a { color: var(--btn-oscuro); }
 :focus-visible { outline: 3px solid #2d7d46; outline-offset: 2px; }
 
 /* ---------- cabecera ---------- */
-.cabecera { background: rgba(237, 247, 240, .96); border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 20; }
+.cabecera { background: rgba(237, 247, 240, .96); border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 20; text-align: left; }
 .cabecera-in { max-width: 1200px; margin: 0 auto; padding: .6rem 1.2rem; display: flex; align-items: center; gap: 1.2rem; }
-.logo { display: flex; align-items: center; gap: .5rem; text-decoration: none; color: var(--texto); font-weight: 700; font-size: 1.2rem; }
-.logo-marca { width: 38px; height: 38px; display: grid; place-items: center; background: linear-gradient(135deg, var(--btn) 0%, var(--btn-oscuro) 100%); color: #fff; border-radius: 8px; font-size: 1rem; font-weight: 700; letter-spacing: .04em; }
+.logo { display: flex; align-items: center; gap: 0; text-decoration: none; color: var(--texto); font-weight: 700; font-size: 1.2rem; }
+.logo-marca { height: 1.15em; width: auto; display: block; flex: none; }
 .nav { display: flex; gap: .3rem; flex: 1; }
 .nav a { text-decoration: none; color: var(--texto); padding: .5rem .8rem; border-bottom: 3px solid transparent; font-size: .95rem; }
 .nav a:hover { background: #e2f0e6; }
@@ -64,6 +64,10 @@ input.invalido, select.invalido, textarea.invalido { border-color: var(--error);
 .mensaje.info { background: var(--panel); border-color: var(--borde); }
 .mensaje[hidden] { display: none; }
 .fila-botones { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .4rem; }
+.form-lineal { max-width: 900px; }
+.paso { margin-bottom: 1rem; }
+.paso h2 { display: flex; align-items: center; gap: .55rem; }
+.paso-num { display: inline-grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: var(--btn); color: #fff; font-size: .85rem; flex: none; }
 .check { display: flex; align-items: center; gap: .5rem; padding: .35rem 0; cursor: pointer; }
 .check input { width: 18px; height: 18px; accent-color: var(--btn); }
 
@@ -85,6 +89,8 @@ input.invalido, select.invalido, textarea.invalido { border-color: var(--error);
 .tarjeta { border: 1px solid var(--borde); border-radius: 8px; padding: 1.1rem; background: #fff; box-shadow: var(--sombra); }
 .tarjeta.panel { background: var(--panel); box-shadow: none; }
 .tarjeta .icono { width: 54px; height: 54px; border-radius: 10px; background: linear-gradient(135deg, #ebf7ee 0%, #d9f0e2 100%); border: 1px solid var(--borde); display: grid; place-items: center; font-size: .82rem; font-weight: 700; letter-spacing: .08em; color: var(--btn-oscuro); margin-bottom: .7rem; text-transform: uppercase; }
+.tarjeta .icono-logo { background: transparent; border-color: transparent; }
+.tarjeta .icono-logo img { width: 100%; height: 100%; object-fit: contain; }
 .tarjeta-enlace { text-decoration: none; color: inherit; display: block; transition: transform .12s, border-color .12s; }
 .tarjeta-enlace:hover { transform: translateY(-2px); border-color: var(--btn); }
 .tarjeta-enlace .mas { color: var(--btn-oscuro); font-weight: 600; font-size: .9rem; }
@@ -113,6 +119,7 @@ input.invalido, select.invalido, textarea.invalido { border-color: var(--error);
 .punto-card .acciones-card { display: flex; justify-content: space-between; align-items: center; margin-top: .5rem; gap: .5rem; flex-wrap: wrap; }
 .mapa { width: 100%; border: 1px solid var(--borde); border-radius: 8px; background: var(--panel); min-height: 360px; }
 .mapa-alto { min-height: 460px; }
+.mapa-medio { min-height: 320px; }
 .vacio { text-align: center; padding: 2rem 1rem; color: var(--suave); border: 1px dashed var(--borde); border-radius: 8px; }
 
 /* ---------- tablas ---------- */
