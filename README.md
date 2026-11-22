@@ -125,7 +125,7 @@ El importador presupone que el esquema fuente contiene las tablas de la aplicaci
 
 ### Publicar en Vercel
 
-El proyecto incluye un export de Express para Vercel, un proceso de build que copia HTML, CSS, JavaScript e imágenes a `public/`, y configuración para incluir el certificado CA de Supabase en la función. Vercel sirve los assets estáticos desde su CDN y ejecuta las rutas de Express como una función Node.
+El proyecto incluye un export de Express para Vercel y un proceso de build que copia HTML, CSS, JavaScript e imágenes a `public/`. El servidor carga el certificado CA desde una ruta estática para que Vercel lo incluya en la función. Vercel sirve los assets estáticos desde su CDN y ejecuta las rutas de Express como una función Node.
 
 1. Sube el proyecto a GitHub y en Vercel importa ese repositorio. El build command es `npm run build` (también está declarado en `vercel.json`).
 2. En Vercel > **Project Settings > Environment Variables**, configura:

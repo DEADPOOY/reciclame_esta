@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const fsSync = require('node:fs');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
@@ -6,8 +7,16 @@ if (!process.env.DATABASE_URL) {
     throw new Error('Falta DATABASE_URL. Configura la conexión de Postgres de Supabase en .env.');
 }
 
+const ROOT = path.resolve(__dirname, '..');
+const databaseUrl = new URL(process.env.DATABASE_URL);
+// Ruta estática: Vercel puede incluir este certificado en el bundle de Node.
+const supabaseCa = fsSync.readFileSync(path.join(ROOT, 'supabase-ca.crt'), 'utf8');
+databaseUrl.searchParams.delete('sslmode');
+databaseUrl.searchParams.delete('sslrootcert');
+
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: databaseUrl.toString(),
+    ssl: { ca: supabaseCa, rejectUnauthorized: true },
     max: Number(process.env.PG_POOL_MAX || (process.env.VERCEL ? 1 : 5)),
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000

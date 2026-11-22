@@ -1,10 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
-  "functions": {
-    "index.js": {
-      "includeFiles": "supabase-ca.crt",
-      "maxDuration": 30
-    }
-  }
+  "buildCommand": "npm run build"
 }
