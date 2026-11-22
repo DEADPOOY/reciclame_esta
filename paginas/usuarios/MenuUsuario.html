@@ -14,6 +14,19 @@
 
 <h1 id="saludo">Bienvenido</h1>
 <p class="suave">¿Qué quieres hacer hoy?</p>
+
+<section class="tarjeta cerca" aria-labelledby="cerca-titulo">
+  <div class="cerca-cabecera">
+    <div>
+      <h2 id="cerca-titulo">Punto más cercano a tu ubicación</h2>
+      <p class="suave chico">Comparte tu ubicación y te mostramos el centro de acopio verificado más cercano.</p>
+    </div>
+    <button class="btn" type="button" id="btn-mi-ubicacion">Usar mi ubicación</button>
+  </div>
+  <div id="cerca-estado" class="mensaje info" role="status" hidden></div>
+  <div id="cerca-resultado"></div>
+</section>
+
 <section class="rejilla c4" aria-label="Opciones">
   <a class="tarjeta tarjeta-enlace" href="Consulta.html"><div class="icono icono-logo" aria-hidden="true"><img src="/imagenes/logo-c.png" alt=""></div><h2>Consultar centros de acopio</h2><p class="suave chico">Visualiza los puntos registrados y su ubicación.</p><span class="mas">Entrar ›</span></a>
   <a class="tarjeta tarjeta-enlace" href="Buscar.html"><div class="icono icono-logo" aria-hidden="true"><img src="/imagenes/logo-b.png" alt=""></div><h2>Buscar puntos</h2><p class="suave chico">Busca por criterios y filtra por tipo de dispositivo.</p><span class="mas">Entrar ›</span></a>

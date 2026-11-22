@@ -8,12 +8,14 @@ Object.assign(window.Paginas, (() => {
   // Aquí se construyen las tarjetas de puntos, filtros de búsqueda y la vista de detalle de cada centro.
   function MenuUsuario() {
     const s = API.sesion();
+    const claseEstado = (estado) => estado === 'Alta' ? 'ok' : estado === 'Devuelto' ? 'devuelto' : 'nuevo';
     $('saludo').textContent = 'quiubo mi, ' + s.nombre;
     const mis = API.reportes().filter((r) => r.usuarioId === s.id);
     $('mis-reportes').innerHTML = mis.length
-      ? '<div class="tabla-wrap"><table><thead><tr><th>Centro de acopio</th><th>Motivo</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>' +
+      ? '<div class="tabla-wrap"><table><thead><tr><th>Centro de acopio</th><th>Motivo</th><th>Fecha</th><th>Estado</th><th>Respuesta del administrador</th></tr></thead><tbody>' +
         mis.slice().reverse().map((r) => '<tr><td>' + E(r.puntoNombre) + '</td><td>' + E(r.motivo) + '</td><td>' + API.fmtFecha(r.fecha) +
-          '</td><td><span class="insignia ' + (r.estado === 'Alta' ? 'ok' : 'nuevo') + '">' + r.estado + '</span></td></tr>').join('') + '</tbody></table></div>'
+          '</td><td><span class="insignia ' + claseEstado(r.estado) + '">' + E(r.estado) + '</span></td><td>' +
+          (r.respuestaAdmin ? E(r.respuestaAdmin) : '—') + '</td></tr>').join('') + '</tbody></table></div>'
       : '<div class="vacio">Aún no has hecho ningún reporte.</div>';
   }
 

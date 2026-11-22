@@ -90,7 +90,10 @@ window.API = (() => {
     const reportes = () => datos.reportes;
     const bitacora = () => datos.bitacora;
     const sesion = () => datos.sesion;
-    const nombreResiduo = (id) => (residuos().find((x) => x.id === Number(id)) || { nombre: '—' }).nombre;
+    const nombreResiduo = (id) => {
+        if (typeof id === 'string' && !/^\d+$/.test(id.trim())) return id;
+        return (residuos().find((x) => x.id === Number(id)) || { nombre: '—' }).nombre;
+    };
     const dirCompleta = (p) => [p.calle, p.colonia, p.alcaldia, p.cp ? 'C.P. ' + p.cp : '', 'CDMX'].filter(Boolean).join(', ');
     const tieneUbicacion = (p) => /^\d{5}$/.test(String(p.cp || '').trim());
 
@@ -118,8 +121,8 @@ window.API = (() => {
         await mutate('/api/reportes', 'POST', reporte);
     }
 
-    async function darDeAltaReporte(id) {
-        await mutate('/api/admin/reportes/' + id, 'PUT', { estado: 'Alta' });
+    async function responderReporte(id, estado, respuesta) {
+        await mutate('/api/admin/reportes/' + id, 'PUT', { estado, respuesta });
     }
 
     async function eliminarReporte(id) {
@@ -130,7 +133,7 @@ window.API = (() => {
         DIAS, NOMBRE_DIA, ALCALDIAS, MOTIVOS,
         cargar: refresh, refrescar: refresh, registrar, login, cerrarSesion, sesion, residuos, nombreResiduo, todos, verificados, punto,
         dirCompleta, tieneUbicacion, buscar, reportes, bitacora, guardarPunto, actualizarPunto,
-        agregarResiduo, eliminarPunto, crearReporte, darDeAltaReporte, eliminarReporte,
+        agregarResiduo, eliminarPunto, crearReporte, responderReporte, eliminarReporte,
         fmtFecha, fmtDia, norm
     };
 })();

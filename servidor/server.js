@@ -10,6 +10,31 @@ const readline = require('node:readline/promises');
 const ROOT = path.resolve(__dirname, '..');
 const ENV_FILE = path.join(ROOT, '.env');
 require('dotenv').config({ path: ENV_FILE });
+
+const DOMINIOS_CORREO = require('../js/dominios_correo.js');
+
+// Solo se aceptan claves públicas (publishable o anon). Si alguien pega la
+// service role/secret key, el OAuth se desactiva para no exponerla al navegador.
+function esClavePublicaSupabase(key) {
+    if (key.startsWith('sb_publishable_')) return true;
+    if (!key.startsWith('eyJ')) return false;
+    try {
+        const datos = JSON.parse(Buffer.from(key.split('.')[1], 'base64url').toString('utf8'));
+        return datos.role === 'anon';
+    } catch {
+        return false;
+    }
+}
+
+// Configuración de Supabase para el inicio de sesión con GitHub.
+// La publishable/anon key es pública, así que se puede enviar al navegador.
+function supabaseConfig() {
+    const url = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+    const key = String(process.env.SUPABASE_KEY || '').trim();
+    const valido = /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url) && esClavePublicaSupabase(key);
+    return { url, key, valido };
+}
+
 let db;
 const app = express();
 const SESSION_COOKIE = 'rt_session';
@@ -41,15 +66,51 @@ function requiredText(value, label, maxLength) {
     return value.trim();
 }
 
+const TEXTO_PUNTO = /^[\p{L}\p{N}\s.,#'&()\/:;°º·–—\-!?¡¿%]+$/u;
+const TIENE_LETRA = /\p{L}/u;
+
+function textoPunto(value, label, minLength, maxLength) {
+    const texto = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+    if (!texto) throw new HttpError(400, 'El campo ' + label + ' es obligatorio.');
+    if (texto.length > maxLength) {
+        throw new HttpError(400, 'El campo ' + label + ' no debe exceder ' + maxLength + ' caracteres.');
+    }
+    if (texto.length < minLength) {
+        throw new HttpError(400, 'El campo ' + label + ' debe tener al menos ' + minLength + ' caracteres.');
+    }
+    if (!TEXTO_PUNTO.test(texto)) {
+        throw new HttpError(400, 'El campo ' + label + ' contiene caracteres no permitidos.');
+    }
+    if (!TIENE_LETRA.test(texto)) {
+        throw new HttpError(400, 'El campo ' + label + ' debe incluir al menos una letra.');
+    }
+    return texto;
+}
+
 function parseId(value) {
     const id = Number(value);
     if (!Number.isSafeInteger(id) || id < 1) throw new HttpError(400, 'El identificador no es válido.');
     return id;
 }
 
-function validarEmail(value) {
+function dominioCorreoBloqueado(email) {
+    const dominio = email.split('@').pop().toLowerCase();
+    const coincide = (lista) => (lista || []).some((permitido) => {
+        const limpio = String(permitido).trim().toLowerCase();
+        return dominio === limpio || dominio.endsWith('.' + limpio);
+    });
+    if (DOMINIOS_CORREO.permitidos && DOMINIOS_CORREO.permitidos.length) {
+        return !coincide(DOMINIOS_CORREO.permitidos);
+    }
+    return coincide(DOMINIOS_CORREO.bloqueados);
+}
+
+function validarEmail(value, esRegistro = false) {
     const email = requiredText(value, 'El correo electrónico', 254).toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'Escribe un correo electrónico válido.');
+    if (esRegistro && dominioCorreoBloqueado(email)) {
+        throw new HttpError(400, 'Esta terminación de correo no está permitida. Usa otro correo.');
+    }
     return email;
 }
 
@@ -202,13 +263,17 @@ function validarHorarios(horarios) {
 }
 
 async function validarPunto(datos) {
-    const nombre = requiredText(datos.nombre, 'El nombre del punto', 180);
-    const calle = requiredText(datos.calle, 'La calle', 180);
+    const nombre = textoPunto(datos.nombre, 'nombre del punto', 3, 180);
+    const calle = textoPunto(datos.calle, 'calle', 3, 180);
     const alcaldia = requiredText(datos.alcaldia, 'La alcaldía', 100);
     if (!db.ALCALDIAS.includes(alcaldia)) throw new HttpError(400, 'La alcaldía no es válida.');
-    const colonia = typeof datos.colonia === 'string' ? datos.colonia.trim().slice(0, 120) : '';
-    const cp = typeof datos.cp === 'string' ? datos.cp.trim() : '';
-    if (cp && !/^\d{5}$/.test(cp)) throw new HttpError(400, 'El código postal debe contener cinco dígitos.');
+    const colonia = textoPunto(datos.colonia, 'colonia', 2, 120);
+    const cp = requiredText(datos.cp, 'El código postal', 5);
+    if (!/^\d{5}$/.test(cp)) throw new HttpError(400, 'El código postal debe contener cinco dígitos.');
+    const cpNumero = Number(cp);
+    if (cpNumero < 1000 || cpNumero > 16999) {
+        throw new HttpError(400, 'El código postal no corresponde a la Ciudad de México.');
+    }
     const lat = datos.lat == null || datos.lat === '' ? null : Number(datos.lat);
     const lng = datos.lng == null || datos.lng === '' ? null : Number(datos.lng);
     if ((lat === null) !== (lng === null) ||
@@ -221,11 +286,10 @@ async function validarPunto(datos) {
     }
     const residuos = Array.isArray(datos.residuos) ? [...new Set(datos.residuos.map(Number))] : [];
     if (residuos.some((id) => !Number.isSafeInteger(id) || id < 1)) throw new HttpError(400, 'La selección de residuos no es válida.');
-    if (residuos.length) {
-        const placeholders = residuos.map(() => '?').join(',');
-        const [existing] = await db.pool.query(`SELECT id FROM residuos WHERE id IN (${placeholders})`, residuos);
-        if (existing.length !== residuos.length) throw new HttpError(400, 'Uno o más tipos de residuo ya no existen.');
-    }
+    if (!residuos.length) throw new HttpError(400, 'Selecciona al menos un tipo de residuo.');
+    const placeholders = residuos.map(() => '?').join(',');
+    const [existing] = await db.pool.query(`SELECT id FROM residuos WHERE id IN (${placeholders})`, residuos);
+    if (existing.length !== residuos.length) throw new HttpError(400, 'Uno o más tipos de residuo ya no existen.');
     const ficha = validarFicha(datos.ficha || { numero: '', fecha: '', archivo: '', estado: 'pendiente' });
     if (ficha.estado === 'verificada' && (!residuos.length || lat === null)) {
         throw new HttpError(400, 'Para verificar el centro debe tener ubicación y tipos de residuos.');
@@ -240,6 +304,12 @@ async function validarPunto(datos) {
 //a donde te la voy a meter uaajajja son los recuersos aqui va el mapa y nuesta galletica
 // mi galletica, mi galletica, mi galletica esta muy bonita
 
+const supabase = supabaseConfig();
+const connectSrc = ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'];
+if (supabase.valido) {
+    connectSrc.push(supabase.url, supabase.url.replace(/^https:/, 'wss:'));
+}
+
 app.disable('x-powered-by');
 app.use(helmet({
     contentSecurityPolicy: {
@@ -248,7 +318,7 @@ app.use(helmet({
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'"],
+        connectSrc: connectSrc,
         frameSrc: ["'self'", 'https://www.openstreetmap.org', 'https://maps.google.com', 'https://www.google.com', 'https://maps.googleapis.com'],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
@@ -281,7 +351,7 @@ const authRateLimit = rateLimiter(10, 'Demasiados intentos. Espera un momento e 
 app.post('/api/auth/register', authRateLimit, asyncRoute(async (req, res) => {
     const data = requireObject(req.body);
     const nombre = requiredText(data.nombre, 'El nombre completo', 160);
-    const email = validarEmail(data.email);
+    const email = validarEmail(data.email, true);
     const password = validarPassword(data.password, true);
     const passwordHash = await argon2.hash(password, ARGON_OPTIONS);
     const created = await db.transaccion(async (connection) => {
@@ -316,6 +386,68 @@ app.post('/api/auth/logout', asyncRoute(async (req, res) => {
     limpiarCookie(res);
     res.status(204).end();
 }));
+
+// Recibe el token de Supabase después del OAuth, lo verifica contra Supabase
+// y crea/reutiliza el usuario local para emitir la cookie de sesión de ReciclaTech.
+const oauthRateLimit = rateLimiter(20, 'Demasiados intentos de inicio de sesión. Espera un momento.');
+
+app.post('/api/auth/supabase', oauthRateLimit, asyncRoute(async (req, res) => {
+    const data = requireObject(req.body);
+    const accessToken = requiredText(data.access_token, 'El token de acceso', 4096);
+    const config = supabaseConfig();
+    if (!config.valido) {
+        throw new HttpError(503, 'Supabase no está configurado. Revisa SUPABASE_URL y SUPABASE_KEY en .env.');
+    }
+
+    let respuesta;
+    try {
+        respuesta = await fetch(config.url + '/auth/v1/user', {
+            headers: { apikey: config.key, Authorization: 'Bearer ' + accessToken },
+            signal: AbortSignal.timeout(10000)
+        });
+    } catch (error) {
+        console.error('Error verificando el token con Supabase:', error.message);
+        throw new HttpError(502, 'No fue posible verificar la sesión con Supabase. Intenta de nuevo.');
+    }
+    if (!respuesta.ok) {
+        throw new HttpError(401, 'La sesión de Supabase no es válida o expiró. Inicia sesión de nuevo.');
+    }
+
+    const perfil = await respuesta.json().catch(() => null);
+    const proveedor = perfil && perfil.app_metadata && perfil.app_metadata.provider;
+    if (proveedor !== 'github') {
+        throw new HttpError(403, 'Ese proveedor no está permitido. Usa GitHub.');
+    }
+    const email = perfil && typeof perfil.email === 'string' ? perfil.email.trim().toLowerCase() : '';
+    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new HttpError(401, 'Supabase no devolvió un correo electrónico válido.');
+    }
+    const meta = perfil.user_metadata && typeof perfil.user_metadata === 'object' ? perfil.user_metadata : {};
+    const nombre = String(meta.full_name || meta.name || meta.preferred_username || meta.user_name || email.split('@')[0])
+        .trim().replace(/\s+/g, ' ').slice(0, 160) || 'Usuario';
+
+    // Si la cuenta ya existe se reutiliza (conserva su rol). Si es nueva, se crea
+    // con un hash aleatorio porque estos usuarios no usan contraseña local.
+    let user = await db.usuarioPorEmail(email);
+    if (user) {
+        user = { id: Number(user.id), email: user.email, nombre: user.nombre, rol: user.rol };
+    } else {
+        const passwordHash = await argon2.hash(randomBytes(32).toString('hex'), ARGON_OPTIONS);
+        user = await db.usuarioOAuth(email, nombre, passwordHash);
+    }
+    const token = await db.transaccion((connection) => crearSesion(connection, user.id));
+    establecerCookie(res, token);
+    res.json({ session: user });
+}));
+
+app.get('/api/config', (req, res) => {
+    const config = supabaseConfig();
+    res.json({
+        supabaseConfigurado: config.valido,
+        supabaseUrl: config.valido ? config.url : '',
+        supabaseKey: config.valido ? config.key : ''
+    });
+});
 
 app.get('/api/health', asyncRoute(async (req, res) => {
     await db.pool.query('SELECT 1');
@@ -381,12 +513,22 @@ app.post('/api/admin/residuos', verificarSesion, requiereAdmin, asyncRoute(async
 
 app.put('/api/admin/reportes/:id', verificarSesion, requiereAdmin, asyncRoute(async (req, res) => {
     const id = parseId(req.params.id);
-    if (requireObject(req.body).estado !== 'Alta') throw new HttpError(400, 'El estado solicitado no es válido.');
+    const data = requireObject(req.body);
+    if (!['Alta', 'Devuelto'].includes(data.estado)) throw new HttpError(400, 'El estado solicitado no es válido.');
+    const respuesta = requiredText(data.respuesta, 'La explicación para el usuario', 500);
     await db.transaccion(async (connection) => {
         const report = await db.obtenerReporte(id, connection);
         if (!report) throw new HttpError(404, 'El reporte ya no existe.');
-        await connection.execute('UPDATE reportes SET estado = ? WHERE id = ?', ['Alta', id]);
-        await db.guardarAuditoria(connection, req.user, 'Reporte dado de alta', '#' + id + ' · ' + report.puntoNombre);
+        await connection.execute(
+            'UPDATE reportes SET estado = ?, respuesta_admin = ? WHERE id = ?',
+            [data.estado, respuesta, id]
+        );
+        await db.guardarAuditoria(
+            connection,
+            req.user,
+            data.estado === 'Alta' ? 'Reporte aprobado' : 'Reporte devuelto',
+            '#' + id + ' · ' + report.puntoNombre + ' · ' + respuesta
+        );
     });
     res.json({ ok: true });
 }));
@@ -406,6 +548,7 @@ app.get('/', (req, res) => res.redirect('/publico/Index.html'));
 app.use(express.static(path.join(ROOT, 'paginas'), { dotfiles: 'deny', index: false }));
 app.use('/js', express.static(path.join(ROOT, 'js'), { dotfiles: 'deny', index: false }));
 app.use('/css', express.static(path.join(ROOT, 'css'), { dotfiles: 'deny', index: false }));
+app.use('/vendor/supabase', express.static(path.join(ROOT, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd'), { dotfiles: 'deny', index: false }));
 app.use((req, res) => res.status(404).json({ error: 'La página o el recurso solicitado no existe.' }));
 
     app.use((error, req, res, next) => {
@@ -414,8 +557,11 @@ app.use((req, res) => res.status(404).json({ error: 'La página o el recurso sol
         return res.status(409).json({ error: 'Ya existe un registro con esos datos.' });
     }
     const status = Number.isInteger(error.status) ? error.status : 500;
-    if (status >= 500) console.error(error);
-    res.status(status).json({ error: status >= 500 ? 'Ocurrió un error en el servidor. Intenta de nuevo más tarde.' : error.message });
+    if (status >= 500 && !(error instanceof HttpError)) console.error(error);
+    const mensaje = error instanceof HttpError
+        ? error.message
+        : 'Ocurrió un error en el servidor. Intenta de nuevo más tarde.';
+    res.status(status).json({ error: mensaje });
 });
 
 function dotenvValue(value) {
@@ -498,6 +644,9 @@ async function start() {
         throw new Error('APP_ORIGIN debe usar HTTPS en producción.');
     }
     await db.inicializar();
+    if (!supabaseConfig().valido) {
+        console.warn('Aviso: Supabase OAuth está desactivado. Configura SUPABASE_URL y SUPABASE_KEY reales en .env para usar GitHub.');
+    }
     const port = Number(process.env.PORT || 3000);
     app.listen(port, () => console.log('ReciclaTech disponible en http://localhost:' + port));
 }

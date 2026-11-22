@@ -41,7 +41,7 @@ function formatearPunto(row) {
 function formatearReporte(row) {
     return { id: Number(row.id), puntoId: row.punto_id == null ? null : Number(row.punto_id), puntoNombre: row.punto_nombre,
         usuarioId: Number(row.user_id), usuario: row.usuario, motivo: row.motivo, descripcion: row.descripcion,
-        fecha: new Date(row.fecha).toISOString(), estado: row.estado };
+        fecha: new Date(row.fecha).toISOString(), estado: row.estado, respuestaAdmin: row.respuesta_admin || '' };
 }
 
 function horarioBase() {
@@ -61,6 +61,19 @@ function puntoPorDefecto(datos) {
     };
 }
 
+// Mantiene compatibles las bases de datos creadas antes de que existieran
+// la respuesta del administrador y el estado "Devuelto".
+async function asegurarEsquemaReportes() {
+    const [respuesta] = await pool.query("SHOW COLUMNS FROM reportes LIKE 'respuesta_admin'");
+    if (!respuesta.length) {
+        await pool.query("ALTER TABLE reportes ADD COLUMN respuesta_admin VARCHAR(500) NOT NULL DEFAULT '' AFTER estado");
+    }
+    const [estado] = await pool.query("SHOW COLUMNS FROM reportes LIKE 'estado'");
+    if (estado.length && !String(estado[0].Type || '').includes('Devuelto')) {
+        await pool.query("ALTER TABLE reportes MODIFY COLUMN estado ENUM('Nuevo','Alta','Devuelto') NOT NULL DEFAULT 'Nuevo'");
+    }
+}
+
 async function inicializar() {
     const schemaPath = path.join(__dirname, '..', 'base_de_datos', 'Reciclame_esta.sql');
     const schema = await fs.readFile(schemaPath, 'utf8');
@@ -69,6 +82,7 @@ async function inicializar() {
     for (const statement of statements) {
         await pool.query(statement);
     }
+    await asegurarEsquemaReportes();
     for (const nombre of TIPOS_RESIDUO) {
         await pool.execute('INSERT IGNORE INTO residuos (nombre) VALUES (?)', [nombre]);
     }
@@ -102,6 +116,36 @@ async function usuarioPorEmail(email) {
         [email]
     );
     return rows[0] || null;
+}
+
+// Crea o reutiliza la cuenta local que corresponde a un correo verificado por Supabase.
+// Si la cuenta ya existía (por ejemplo, un administrador), conserva su rol.
+async function usuarioOAuth(email, nombre, passwordHash) {
+    const buscar = async () => {
+        const [rows] = await pool.execute(
+            'SELECT id, email, nombre, rol FROM users WHERE email = ?',
+            [email]
+        );
+        if (!rows.length) return null;
+        return { id: Number(rows[0].id), email: rows[0].email, nombre: rows[0].nombre, rol: rows[0].rol };
+    };
+
+    const existente = await buscar();
+    if (existente) return existente;
+
+    try {
+        const [result] = await pool.execute(
+            'INSERT INTO users (email, nombre, password_hash, rol) VALUES (?, ?, ?, ?)',
+            [email, nombre || email.split('@')[0], passwordHash, 'usuario']
+        );
+        return { id: Number(result.insertId), email, nombre: nombre || email.split('@')[0], rol: 'usuario' };
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            const creado = await buscar();
+            if (creado) return creado;
+        }
+        throw error;
+    }
 }
 
 async function usuarioPorSesion(tokenHash) {
@@ -198,7 +242,7 @@ async function obtenerReporte(id, connection = pool) {
 }
 
 module.exports = {
-    pool, DIAS, NOMBRE_DIA, ALCALDIAS, MOTIVOS, TIPOS_RESIDUO, inicializar, usuarioPorEmail,
+    pool, DIAS, NOMBRE_DIA, ALCALDIAS, MOTIVOS, TIPOS_RESIDUO, inicializar, usuarioPorEmail, usuarioOAuth,
     usuarioPorSesion, eliminarSesion, cargarBootstrap,
     transaccion, guardarAuditoria, obtenerPunto, insertarPunto, actualizarPunto, eliminarPunto,
     obtenerReporte, formatearReporte

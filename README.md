@@ -130,3 +130,44 @@ Se necesita Node.js 18 o posterior y MySQL. Desde la carpeta principal del proye
    ```
 
 No subas `.env` a Git: contiene la contraseña de MySQL.
+
+## Inicio de sesión con GitHub (Supabase)
+
+El login social usa Supabase. La publishable/anon key es pública y el servidor la entrega al navegador desde `/api/config`; nunca se manda la service role key.
+
+1. Crea un proyecto en <https://supabase.com/dashboard>.
+2. En **Project Settings > API** copia el **Project URL** y la **publishable/anon key**.
+3. Agrégalos al `.env` y reinicia el servidor:
+
+   ```env
+   SUPABASE_URL=https://TU-PROYECTO.supabase.co
+   SUPABASE_KEY=TU_PUBLISHABLE_KEY
+   ```
+
+4. En **Authentication > Providers** activa GitHub. La URL de callback que pide Supabase es:
+
+   ```text
+   https://TU-PROYECTO.supabase.co/auth/v1/callback
+   ```
+
+5. En **Authentication > URL Configuration** agrega las URLs de retorno de la app:
+
+   ```text
+   http://localhost:3000/publico/Login.html*
+   https://TU-DOMINIO/publico/Login.html*
+   ```
+
+6. Si `SUPABASE_URL` sigue siendo el valor de ejemplo (`https://supabase.co`), el servidor avisa que el OAuth está desactivado y los botones muestran el error al pulsarlos. No es un proyecto real de Supabase.
+
+El flujo es: el navegador inicia OAuth con Supabase, Supabase regresa a `Login.html?oauth=1`, el frontend manda el token a `/api/auth/supabase`, el servidor lo verifica contra Supabase, crea o reutiliza la cuenta local y emite la cookie de sesión de ReciclaTech.
+
+## Validación de dominios de correo
+
+El registro rechaza correos de dominios temporales/desechables. La lista se comparte entre el navegador y el servidor desde `js/dominios_correo.js`:
+
+- Si `permitidos` está vacío, se bloquean los dominios de `bloqueados`.
+- Si llenas `permitidos`, solo se aceptan esos dominios.
+
+El mensaje que se muestra es: **“Esta terminación de correo no está permitida. Usa otro correo.”**
+
+bueno ahora si este es el final me diverti y me gusto gracias por todo

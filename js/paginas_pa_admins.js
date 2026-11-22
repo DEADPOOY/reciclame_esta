@@ -17,7 +17,7 @@ Object.assign(window.Paginas, (() => {
         $('s-reportes').textContent = API.reportes().filter((r) => r.estado === 'Nuevo').length;
         $('s-fichas').textContent = pts.filter((p) => p.ficha.estado !== 'verificada').length;
         const b = API.bitacora().slice(0, 8);
-        $('bitacora').textContent = b.length
+        $('bitacora').innerHTML = b.length
             ? '<div class = "tabla-wrap"><table><thead><tr><th>Fecha</th><th>Administrador</th><th>Acción</th><th>Detalle</th></tr></thead><tbody>' +
                 b.map((x) => `<tr><td>` + API.fmtFecha(x.fecha) + `</td><td>` + E(x.admin) + `</td><td>` + E(x.accion) + `</td><td>` + E(x.detalle) + `</td></tr>`).join('') + `</tbody></table></div>`
             : '<div class="vacio">Aún no hay actividad registrada.</div>';
@@ -49,10 +49,16 @@ Object.assign(window.Paginas, (() => {
       const f = $('form-punto-nuevo');
       const tb = $('horarios-tbody');
       const tipos = $('tipos');
+      const tiposError = $('tipos-error');
       const mapa = $('mapa');
       const guardar = $('guardar');
+      const siguiente = $('siguiente');
+      const anterior = $('anterior');
+      const indicador = $('paso-indicador');
+      const pasos = Array.from(f.querySelectorAll('.paso'));
       const id = App.parametro('id');
       const editando = id ? API.punto(id) : null;
+      let paso = 1;
 
       if (id && !editando) {
         App.avisoDiferido('El punto que intentas editar ya no existe.', 'error');
@@ -88,6 +94,9 @@ Object.assign(window.Paginas, (() => {
       tb.addEventListener('change', (e) => {
         if (e.target.classList.contains('x')) alternarDia(e.target.closest('tr'));
       });
+      tipos.addEventListener('change', () => {
+        if (tipos.querySelector('input:checked')) tiposError.textContent = '';
+      });
 
       if (editando) {
         document.title = 'Editar punto de recepción · ReciclaTech';
@@ -99,30 +108,82 @@ Object.assign(window.Paginas, (() => {
         f.calle.value = editando.calle;
         f.colonia.value = editando.colonia || '';
         f.cp.value = editando.cp || '';
+        f.lat.value = editando.lat != null ? editando.lat : '';
+        f.lng.value = editando.lng != null ? editando.lng : '';
       }
 
       function vista() {
-        const cp = f.cp.value.trim();
-        mapa.src = App.urlMapa(API.tieneUbicacion({ cp }) ? { cp } : null);
+        const lat = f.lat.value.trim();
+        const lng = f.lng.value.trim();
+        const punto = {
+          cp: f.cp.value.trim(),
+          alcaldia: f.alcaldia.value,
+          lat: lat === '' || Number.isNaN(Number(lat)) ? null : Number(lat),
+          lng: lng === '' || Number.isNaN(Number(lng)) ? null : Number(lng)
+        };
+        mapa.src = App.urlMapa(punto);
       }
       f.cp.addEventListener('input', vista);
       f.alcaldia.addEventListener('change', vista);
+      f.lat.addEventListener('input', vista);
+      f.lng.addEventListener('input', vista);
       vista();
+
+      function residuosSeleccionados() {
+        return Array.from(tipos.querySelectorAll('input:checked')).map((i) => Number(i.value));
+      }
+
+      function validarPaso(n) {
+        if (n === 1) return Validaciones.puntoCompleto(f);
+        if (n === 2) return Validaciones.coordenadas(f);
+        if (n === 3) return Boolean(Validaciones.horariosTabla(tb));
+        if (n === 4) {
+          if (!residuosSeleccionados().length) {
+            tiposError.textContent = 'Selecciona al menos un tipo de residuo.';
+            return false;
+          }
+          tiposError.textContent = '';
+          return true;
+        }
+        return true;
+      }
+
+      function mostrarPaso(n) {
+        paso = Math.min(Math.max(n, 1), pasos.length);
+        pasos.forEach((seccion, i) => { seccion.hidden = i + 1 !== paso; });
+        indicador.textContent = 'Paso ' + paso + ' de ' + pasos.length;
+        anterior.hidden = paso === 1;
+        siguiente.hidden = paso === pasos.length;
+        guardar.hidden = paso !== pasos.length;
+        const visible = pasos[paso - 1];
+        const primero = visible.querySelector('input:not([type="hidden"]), select, textarea');
+        if (primero && paso > 1) primero.focus({ preventScroll: true });
+        visible.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      siguiente.addEventListener('click', () => {
+        if (!validarPaso(paso)) return;
+        mostrarPaso(paso + 1);
+      });
+      anterior.addEventListener('click', () => mostrarPaso(paso - 1));
 
       f.addEventListener('submit', (e) => {
         e.preventDefault();
-        if (!Validaciones.puntoCompleto(f)) return;
+        for (let n = 1; n <= pasos.length; n++) {
+          if (!validarPaso(n)) { mostrarPaso(n); return; }
+        }
         const horariosNuevos = Validaciones.horariosTabla(tb);
-        if (!horariosNuevos) return;
-        const residuos = Array.from(tipos.querySelectorAll('input:checked')).map((i) => Number(i.value));
+        if (!horariosNuevos) { mostrarPaso(3); return; }
         const datos = {
           nombre: f.nombre.value.trim(),
           calle: f.calle.value.trim(),
           colonia: f.colonia.value.trim(),
           alcaldia: f.alcaldia.value,
           cp: f.cp.value.trim(),
+          lat: f.lat.value.trim(),
+          lng: f.lng.value.trim(),
           horarios: horariosNuevos,
-          residuos
+          residuos: residuosSeleccionados()
         };
         App.ejecutar(async () => {
           guardar.disabled = true;
@@ -135,6 +196,8 @@ Object.assign(window.Paginas, (() => {
           }
         });
       });
+
+      mostrarPaso(1);
     }
 
   //esta miercoles es pa verificar fichas oficiales de cada puntico
@@ -244,23 +307,30 @@ Object.assign(window.Paginas, (() => {
       const p = API.punto(sel.value); App.limpiarMarcas(f);
       f.calle.value = p ? p.calle : ''; f.colonia.value = p ? p.colonia : ''; f.alcaldia.value = p ? p.alcaldia : '';
       f.cp.value = p ? p.cp || '' : '';
+      f.lat.value = p && p.lat != null ? p.lat : '';
+      f.lng.value = p && p.lng != null ? p.lng : '';
       vista();
     }
     function vista() {
+      const lat = f.lat.value.trim();
+      const lng = f.lng.value.trim();
       const punto = {
         cp: f.cp.value.trim(),
-        alcaldia: f.alcaldia.value
+        alcaldia: f.alcaldia.value,
+        lat: lat === '' || Number.isNaN(Number(lat)) ? null : Number(lat),
+        lng: lng === '' || Number.isNaN(Number(lng)) ? null : Number(lng)
       };
-      mapa.src = App.urlMapa(API.tieneUbicacion(punto) ? punto : null);
+      mapa.src = App.urlMapa(punto);
     }
     sel.addEventListener('change', cargar);
     f.cp.addEventListener('input', vista); f.alcaldia.addEventListener('change', vista);
+    f.lat.addEventListener('input', vista); f.lng.addEventListener('input', vista);
     f.addEventListener('submit', (e) => {
       e.preventDefault();
       if (!Validaciones.ubicacion(sel, f)) return;
       App.ejecutar(async () => {
         await API.actualizarPunto(sel.value, { calle: f.calle.value.trim(), colonia: f.colonia.value.trim(), alcaldia: f.alcaldia.value,
-          cp: f.cp.value.trim() }, 'Ubicación actualizada');
+          cp: f.cp.value.trim(), lat: f.lat.value.trim(), lng: f.lng.value.trim() }, 'Ubicación actualizada');
         App.aviso('Ubicación guardada.', 'ok'); cargar();
       });
     });
@@ -269,24 +339,21 @@ Object.assign(window.Paginas, (() => {
   }
 
   //ojo se viene la pinche gestion de reportes de usuarios
-  //permite filtrar, consultar, dar de alta, etc alch es por hueva que no pongo mas xd
+  //permite filtrar, consultar, aprobar o devolver con una explicacion para el usuario
   function AdmReportes() {
+    const claseEstado = (estado) => estado === 'Alta' ? 'ok' : estado === 'Devuelto' ? 'devuelto' : 'nuevo';
+
     function pintar() {
       const est = $('estado').value; const q = API.norm($('q').value);
       const rs = API.reportes().filter((r) => (!est || r.estado === est) &&
-        (!q || API.norm([r.puntoNombre, r.usuario, r.motivo, r.id].join(' ')).includes(q)));
+        (!q || API.norm([r.puntoNombre, r.usuario, r.motivo, r.descripcion, r.respuestaAdmin, r.id].join(' ')).includes(q)));
       $('tbody').innerHTML = rs.map((r) => '<tr><td>' + r.id + '</td><td>' + E(r.puntoNombre) + '</td><td>' + E(r.usuario) + '</td><td>' + API.fmtFecha(r.fecha) +
-        '</td><td><span class="insignia ' + (r.estado === 'Alta' ? 'ok' : 'nuevo') + '">' + r.estado + '</span></td><td>' +
-        '<button class="btn sec chico" data-c="' + r.id + '" type="button">Consultar</button>' +
-        (r.estado === 'Nuevo' ? '<button class="btn chico" data-a="' + r.id + '" type="button">Dar de alta</button>' : '') +
+        '</td><td><span class="insignia ' + claseEstado(r.estado) + '">' + E(r.estado) + '</span></td><td>' +
+        '<button class="btn sec chico" data-c="' + r.id + '" type="button">Revisar</button>' +
         '<button class="btn peligro chico" data-e="' + r.id + '" type="button">Eliminar</button></td></tr>').join('') ||
         '<tr><td colspan="6" class="suave">No hay reportes con esos criterios.</td></tr>';
       const tb = $('tbody');
       tb.querySelectorAll('[data-c]').forEach((b) => b.addEventListener('click', () => detalle(Number(b.dataset.c))));
-      tb.querySelectorAll('[data-a]').forEach((b) => b.addEventListener('click', () => App.ejecutar(async () => {
-        await API.darDeAltaReporte(Number(b.dataset.a));
-        App.aviso('Reporte dado de alta.', 'ok'); pintar(); detalle(Number(b.dataset.a));
-      })));
       tb.querySelectorAll('[data-e]').forEach((b) => b.addEventListener('click', () => {
         if (confirm('¿Eliminar el reporte #' + b.dataset.e + '?')) App.ejecutar(async () => {
           await API.eliminarReporte(Number(b.dataset.e));
@@ -294,14 +361,50 @@ Object.assign(window.Paginas, (() => {
         });
       }));
     }
+
     function detalle(id) {
       const r = API.reportes().find((x) => x.id === id); const d = $('detalle');
       if (!r) { d.hidden = true; return; }
       d.hidden = false;
-      d.innerHTML = '<h2>Reporte #' + r.id + '</h2><p><strong>Centro de acopio:</strong> ' + E(r.puntoNombre) + '<br><strong>Usuario:</strong> ' + E(r.usuario) +
-        '<br><strong>Fecha:</strong> ' + API.fmtFecha(r.fecha) + '<br><strong>Motivo:</strong> ' + E(r.motivo) + '<br><strong>Estado:</strong> ' + r.estado +
-        '</p><p><strong>Descripción:</strong><br>' + E(r.descripcion) + '</p>';
+      d.innerHTML = '<h2>Reporte #' + r.id + '</h2><p><strong>Centro de acopio:</strong> ' + E(r.puntoNombre) +
+        '<br><strong>Usuario:</strong> ' + E(r.usuario) +
+        '<br><strong>Fecha:</strong> ' + API.fmtFecha(r.fecha) +
+        '<br><strong>Motivo:</strong> ' + E(r.motivo) +
+        '<br><strong>Estado:</strong> <span class="insignia ' + claseEstado(r.estado) + '">' + E(r.estado) + '</span>' +
+        '</p><p><strong>Descripción del usuario:</strong><br>' + E(r.descripcion) + '</p>' +
+        '<p><strong>Respuesta actual del administrador:</strong><br>' +
+        (r.respuestaAdmin ? E(r.respuestaAdmin) : '<span class="suave">Sin respuesta registrada.</span>') + '</p>' +
+        '<form id="form-respuesta-reporte" novalidate>' +
+        '<div class="campo"><label for="respuesta-admin">Explicación para el usuario</label>' +
+        '<textarea id="respuesta-admin" name="respuesta" rows="3" maxlength="500" placeholder="Explica por qué se aprueba o por qué se devuelve el reporte.">' +
+        E(r.respuestaAdmin) + '</textarea><div class="error-campo" aria-live="polite"></div></div>' +
+        '<div class="fila-botones">' +
+        '<button class="btn" type="button" data-responder="Alta">Aprobar reporte</button>' +
+        '<button class="btn peligro" type="button" data-responder="Devuelto">Devolver reporte</button>' +
+        '</div></form>';
+
+      const form = $('form-respuesta-reporte');
+      form.querySelectorAll('[data-responder]').forEach((b) => b.addEventListener('click', () => {
+        const respuesta = form.respuesta.value.trim();
+        if (!respuesta) {
+          App.marcar(form.respuesta, 'Escribe la explicación para el usuario.');
+          return;
+        }
+        App.marcar(form.respuesta, '');
+        const estado = b.dataset.responder;
+        App.ejecutar(async () => {
+          b.disabled = true;
+          try {
+            await API.responderReporte(r.id, estado, respuesta);
+            App.aviso(estado === 'Alta' ? 'Reporte aprobado.' : 'Reporte devuelto.', 'ok');
+            pintar(); detalle(r.id);
+          } finally {
+            b.disabled = false;
+          }
+        });
+      }));
     }
+
     $('estado').addEventListener('change', pintar); $('q').addEventListener('input', pintar);
     $('form-filtro').addEventListener('submit', (e) => { e.preventDefault(); pintar(); });
     pintar();

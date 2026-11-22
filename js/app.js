@@ -115,14 +115,123 @@ const App = (() => {
     '<span class="suave chico">Sin tipos de residuo registrados</span>';
   const badgeFicha = (p) => p.ficha.estado === 'verificada'
     ? '<span class="insignia ok">Ficha verificada</span>' : '<span class="insignia pend">Ficha pendiente</span>';
-  const urlMapa = (p) => {
-    const consulta = !p || !API.tieneUbicacion(p) ? 'Ciudad de México' : p.cp + ', Ciudad de México';
-    return 'https://www.google.com/maps/embed?origin=mfe&pb=!1m2!2m1!1s' + encodeURIComponent(consulta);
+  const coordenadasValidas = (p) => p && p.lat != null && p.lng != null &&
+    Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng));
+  const consultaMapa = (p) => {
+    if (coordenadasValidas(p)) return p.lat + ',' + p.lng;
+    if (!p || !API.tieneUbicacion(p)) return 'Ciudad de México';
+    return p.cp + ', Ciudad de México';
   };
-  const urlMapaGrande = (p) => {
-    const consulta = p.cp + ', Ciudad de México';
-    return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(consulta);
+  const urlMapa = (p) => 'https://www.google.com/maps/embed?origin=mfe&pb=!1m2!2m1!1s' +
+    encodeURIComponent(consultaMapa(p));
+  const urlMapaGrande = (p) => 'https://www.google.com/maps/search/?api=1&query=' +
+    encodeURIComponent(consultaMapa(p));
+
+  /* ---------- punto más cercano a la ubicación del visitante ---------- */
+  // Coordenadas aproximadas del centro de cada alcaldía. Se usan solo cuando el
+  // punto no tiene latitud/longitud capturadas, para no dejar vacía la sección.
+  const ALCALDIA_COORDS = {
+    'Álvaro Obregón': [19.3593, -99.2033],
+    'Azcapotzalco': [19.4869, -99.1850],
+    'Benito Juárez': [19.3984, -99.1577],
+    'Coyoacán': [19.3467, -99.1617],
+    'Cuajimalpa de Morelos': [19.3650, -99.2930],
+    'Cuauhtémoc': [19.4326, -99.1332],
+    'Gustavo A. Madero': [19.4939, -99.1100],
+    'Iztacalco': [19.3950, -99.0970],
+    'Iztapalapa': [19.3550, -99.0620],
+    'La Magdalena Contreras': [19.3333, -99.2333],
+    'Miguel Hidalgo': [19.4300, -99.2000],
+    'Milpa Alta': [19.1920, -99.0230],
+    'Tláhuac': [19.2860, -99.0050],
+    'Tlalpan': [19.2960, -99.1680],
+    'Venustiano Carranza': [19.4333, -99.1000],
+    'Xochimilco': [19.2570, -99.1040]
   };
+
+  function coordenadasPunto(p) {
+    if (coordenadasValidas(p)) return { lat: Number(p.lat), lng: Number(p.lng), exacta: true };
+    const nombre = p.alcaldia || '';
+    const clave = ALCALDIA_COORDS[nombre] ? nombre
+      : Object.keys(ALCALDIA_COORDS).find((k) => API.norm(k) === API.norm(nombre));
+    return clave ? { lat: ALCALDIA_COORDS[clave][0], lng: ALCALDIA_COORDS[clave][1], exacta: false } : null;
+  }
+
+  function distanciaKm(a, b) {
+    const radio = 6371;
+    const rad = (g) => g * Math.PI / 180;
+    const dLat = rad(b.lat - a.lat);
+    const dLng = rad(b.lng - a.lng);
+    const h = Math.sin(dLat / 2) ** 2 +
+      Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * radio * Math.asin(Math.sqrt(h));
+  }
+
+  function iniciarPuntoCercano() {
+    const boton = document.getElementById('btn-mi-ubicacion');
+    if (!boton) return;
+    const estado = document.getElementById('cerca-estado');
+    const resultado = document.getElementById('cerca-resultado');
+    const mostrar = (texto, tipo) => {
+      if (!estado) return;
+      estado.hidden = !texto;
+      estado.className = 'mensaje ' + (tipo || 'info');
+      estado.textContent = texto || '';
+    };
+    const mensajeGeo = (error) => {
+      if (error && error.code === 1) return 'No diste permiso de ubicación. Actívalo en tu navegador o busca el centro manualmente.';
+      if (error && error.code === 2) return 'Tu ubicación no está disponible en este momento. Intenta de nuevo o busca el centro manualmente.';
+      if (error && error.code === 3) return 'La búsqueda de tu ubicación tardó demasiado. Intenta de nuevo.';
+      return 'No pudimos obtener tu ubicación. Busca el centro manualmente.';
+    };
+
+    function pintar(pos) {
+      const usuario = { lat: pos.latitude, lng: pos.longitude };
+      const candidatos = API.verificados()
+        .map((p) => ({ p, c: coordenadasPunto(p) }))
+        .filter((x) => x.c)
+        .map((x) => ({ p: x.p, c: x.c, km: distanciaKm(usuario, x.c) }))
+        .sort((a, b) => a.km - b.km);
+
+      if (!candidatos.length) {
+        mostrar('Todavía no hay centros verificados con ubicación registrada. Prueba a buscar uno manualmente.', 'error');
+        resultado.innerHTML = '<a class="btn sec chico" href="' + rutaUsuario('Buscar.html') + '">Buscar centros</a>';
+        return;
+      }
+
+      const mejor = candidatos[0];
+      const aproximada = mejor.c.exacta ? '' : ' aprox.';
+      const mapa = urlMapaGrande(mejor.p);
+      mostrar('', 'info');
+      resultado.innerHTML = '<article class="punto-card cerca-card">' +
+        '<div class="cerca-titulo"><h3>' + esc(mejor.p.nombre) + '</h3>' +
+        '<span class="insignia ok">A ' + mejor.km.toFixed(1) + ' km' + aproximada + '</span></div>' +
+        '<div class="suave chico">' + esc(API.dirCompleta(mejor.p)) + '</div>' +
+        '<div class="acciones-card"><span>' + chipsResiduos(mejor.p) + '</span>' +
+        '<span><a class="btn sec chico" href="' + rutaUsuario('Punto.html?id=' + mejor.p.id) + '">Ver información</a> ' +
+        '<a class="btn chico" href="' + mapa + '" target="_blank" rel="noopener">Cómo llegar</a></span></div>' +
+        (mejor.c.exacta ? '' : '<p class="suave chico" style="margin:.5rem 0 0">La distancia es aproximada porque el centro aún no tiene coordenadas exactas; se calculó con el centro de su alcaldía.</p>') +
+        '</article>';
+    }
+
+    boton.addEventListener('click', () => {
+      if (!navigator.geolocation) {
+        mostrar('Tu navegador no permite obtener la ubicación.', 'error');
+        return;
+      }
+      boton.disabled = true;
+      mostrar('Buscando tu ubicación…', 'info');
+      navigator.geolocation.getCurrentPosition(
+        (pos) => { boton.disabled = false; pintar(pos.coords); },
+        (error) => {
+          boton.disabled = false;
+          mostrar(mensajeGeo(error), 'error');
+          resultado.innerHTML = '<a class="btn sec chico" href="' + rutaUsuario('Buscar.html') + '">Buscar centros manualmente</a>';
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    });
+  }
   const tablaHorario = (p) => '<div class="tabla-wrap"><table><thead><tr><th>Día</th><th>Horario de atención</th></tr></thead><tbody>' +
     API.DIAS.map((d) => '<tr><td>' + API.NOMBRE_DIA[d] + '</td><td>' + API.fmtDia(p.horarios[d]) + '</td></tr>').join('') + '</tbody></table></div>';
   const opcionesPuntos = (lista, sel, ph) => '<option value="">' + esc(ph || 'Seleccione un punto de recepción') + '</option>' +
@@ -154,6 +263,7 @@ const App = (() => {
       const acceso = document.body.dataset.acceso || 'libre';
       if (!guardia(acceso)) return;
       armarLayout();
+      iniciarPuntoCercano();
       mostrarAvisoPendiente();
       const nombre = document.body.dataset.pagina;
       if (window.Paginas && window.Paginas[nombre]) window.Paginas[nombre]();
@@ -172,5 +282,6 @@ const App = (() => {
   }
 
   return { esc, parametro, aviso, avisoDiferido, menuPorRol, chipsResiduos, badgeFicha, urlMapa, urlMapaGrande,
-    tablaHorario, opcionesPuntos, opcionesLista, marcar, limpiarMarcas, requerido, mensaje, ejecutar };
+    tablaHorario, opcionesPuntos, opcionesLista, marcar, limpiarMarcas, requerido, mensaje, ejecutar,
+    iniciarPuntoCercano };
 })();

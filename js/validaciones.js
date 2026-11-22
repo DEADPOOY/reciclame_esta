@@ -1,6 +1,70 @@
 const Validaciones = (() => {
   const correoValido = (valor) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+  const DOMINIOS = (typeof window !== 'undefined' && window.DOMINIOS_CORREO) ||
+    { permitidos: [], bloqueados: [] };
+  const dominioDe = (valor) => String(valor).trim().toLowerCase().split('@').pop();
+  const coincideDominio = (dominio, lista) => (lista || []).some((permitido) => {
+    const limpio = String(permitido).trim().toLowerCase();
+    return dominio === limpio || dominio.endsWith('.' + limpio);
+  });
+  const dominioPermitido = (valor) => {
+    const dominio = dominioDe(valor);
+    if (!dominio) return false;
+    if (DOMINIOS.permitidos && DOMINIOS.permitidos.length) {
+      return coincideDominio(dominio, DOMINIOS.permitidos);
+    }
+    return !coincideDominio(dominio, DOMINIOS.bloqueados);
+  };
   const marcarRequerido = (campo, mensaje) => App.requerido(campo, mensaje);
+  const TEXTO_PUNTO = /^[\p{L}\p{N}\s.,#'&()\/:;°º·–—\-!?¡¿%]+$/u;
+  const TIENE_LETRA = /\p{L}/u;
+
+  function validarTexto(campo, mensajeVacio, etiqueta, minimo, maximo) {
+    const valor = campo.value.trim().replace(/\s+/g, ' ');
+    campo.value = valor;
+    if (!valor) {
+      App.marcar(campo, mensajeVacio);
+      return false;
+    }
+    if (valor.length < minimo) {
+      App.marcar(campo, etiqueta + ' debe tener al menos ' + minimo + ' caracteres.');
+      return false;
+    }
+    if (valor.length > maximo) {
+      App.marcar(campo, etiqueta + ' no puede superar ' + maximo + ' caracteres.');
+      return false;
+    }
+    if (!TEXTO_PUNTO.test(valor)) {
+      App.marcar(campo, etiqueta + ' solo puede llevar letras, números y signos comunes.');
+      return false;
+    }
+    if (!TIENE_LETRA.test(valor)) {
+      App.marcar(campo, etiqueta + ' debe incluir al menos una letra.');
+      return false;
+    }
+    App.marcar(campo, '');
+    return true;
+  }
+
+  function validarCP(campo) {
+    const cp = campo.value.trim();
+    campo.value = cp;
+    if (!cp) {
+      App.marcar(campo, 'Escribe el código postal.');
+      return false;
+    }
+    if (!/^\d{5}$/.test(cp)) {
+      App.marcar(campo, 'El código postal debe tener cinco dígitos.');
+      return false;
+    }
+    const numero = Number(cp);
+    if (numero < 1000 || numero > 16999) {
+      App.marcar(campo, 'El código postal no corresponde a la Ciudad de México.');
+      return false;
+    }
+    App.marcar(campo, '');
+    return true;
+  }
 
   function limpiarNombre(valor) {
     return Array.from(String(valor).toUpperCase(), (letra) => letra === 'Ñ'
@@ -58,6 +122,9 @@ const Validaciones = (() => {
     if (email.value.trim() && !correoValido(email.value.trim())) {
       App.marcar(email, 'Escribe un correo electrónico válido.');
       valido = false;
+    } else if (email.value.trim() && !dominioPermitido(email.value)) {
+      App.marcar(email, 'Esta terminación de correo no está permitida. Usa otro correo.');
+      valido = false;
     }
     valido = marcarRequerido(password, 'Escribe una contraseña.') && valido;
     if (password.value.length < 12 || password.value.length > 128) {
@@ -105,15 +172,16 @@ const Validaciones = (() => {
   }
 
   function puntoCompleto(form) {
-    let valido = marcarRequerido(form.nombre, 'Escribe el nombre del punto.');
-    valido = marcarRequerido(form.calle, 'Escribe la calle y número.') && valido;
-    valido = marcarRequerido(form.colonia, 'Escribe la colonia.') && valido;
+    let valido = validarTexto(form.nombre, 'Escribe el nombre del punto.', 'El nombre del punto', 3, 180);
+    valido = validarTexto(form.calle, 'Escribe la calle y número.', 'La dirección', 3, 180) && valido;
+    valido = validarTexto(form.colonia, 'Escribe la colonia.', 'La colonia', 2, 120) && valido;
     valido = marcarRequerido(form.alcaldia, 'Selecciona una alcaldía.') && valido;
-    valido = marcarRequerido(form.cp, 'Escribe el código postal.') && valido;
-    if (form.cp.value.trim() && !/^\d{5}$/.test(form.cp.value.trim())) {
-      App.marcar(form.cp, 'El código postal debe tener cinco dígitos.');
+    if (form.alcaldia.value && typeof API !== 'undefined' && Array.isArray(API.ALCALDIAS) &&
+        !API.ALCALDIAS.includes(form.alcaldia.value)) {
+      App.marcar(form.alcaldia, 'Selecciona una alcaldía de la Ciudad de México.');
       valido = false;
     }
+    valido = validarCP(form.cp) && valido;
     return valido;
   }
 
@@ -168,18 +236,40 @@ const Validaciones = (() => {
     return horariosTabla(tabla);
   }
 
+  function coordenadas(form) {
+    const lat = form.lat ? form.lat.value.trim() : '';
+    const lng = form.lng ? form.lng.value.trim() : '';
+    if ((lat && !lng) || (!lat && lng)) {
+      App.marcar(lat ? form.lng : form.lat, 'Escribe latitud y longitud juntas, o deja ambas vacías.');
+      return false;
+    }
+    if (lat && (Number.isNaN(Number(lat)) || Number(lat) < 19 || Number(lat) > 19.65)) {
+      App.marcar(form.lat, 'La latitud debe estar entre 19 y 19.65 para la CDMX.');
+      return false;
+    }
+    if (lng && (Number.isNaN(Number(lng)) || Number(lng) < -99.4 || Number(lng) > -98.9)) {
+      App.marcar(form.lng, 'La longitud debe estar entre -99.4 y -98.9 para la CDMX.');
+      return false;
+    }
+    if (form.lat) App.marcar(form.lat, '');
+    if (form.lng) App.marcar(form.lng, '');
+    return true;
+  }
+
   function ubicacion(selector, form) {
     let valido = marcarRequerido(selector, 'Selecciona un punto de recepción.');
-    for (const [campo, mensaje] of [[form.calle, 'Escribe la calle y número.'], [form.colonia, 'Escribe la colonia.'],
-      [form.alcaldia, 'Selecciona una alcaldía.'], [form.cp, 'Escribe un código postal de cinco dígitos.']]) {
-      valido = marcarRequerido(campo, mensaje) && valido;
-    }
-    if (form.cp.value.trim() && !/^\d{5}$/.test(form.cp.value.trim())) {
-      App.marcar(form.cp, 'El código postal debe tener cinco dígitos.');
+    valido = validarTexto(form.calle, 'Escribe la calle y número.', 'La dirección', 3, 180) && valido;
+    valido = validarTexto(form.colonia, 'Escribe la colonia.', 'La colonia', 2, 120) && valido;
+    valido = marcarRequerido(form.alcaldia, 'Selecciona una alcaldía.') && valido;
+    if (form.alcaldia.value && typeof API !== 'undefined' && Array.isArray(API.ALCALDIAS) &&
+        !API.ALCALDIAS.includes(form.alcaldia.value)) {
+      App.marcar(form.alcaldia, 'Selecciona una alcaldía de la Ciudad de México.');
       valido = false;
     }
+    valido = validarCP(form.cp) && valido;
+    if (!coordenadas(form)) valido = false;
     return valido;
   }
 
-  return { prepararRegistro, registro, login, reporte, punto, puntoCompleto, ficha, nuevoResiduo, guardarResiduos, horarios, horariosTabla, ubicacion };
+  return { prepararRegistro, registro, login, reporte, punto, puntoCompleto, ficha, nuevoResiduo, guardarResiduos, horarios, horariosTabla, ubicacion, coordenadas };
 })();
