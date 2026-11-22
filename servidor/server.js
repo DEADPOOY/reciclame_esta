@@ -3,7 +3,6 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const argon2 = require('argon2');
 const { createHash, randomBytes } = require('node:crypto');
-const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
@@ -35,11 +34,44 @@ function supabaseConfig() {
 }
 
 let db;
+let inicializacion;
 const app = express();
+if (process.env.VERCEL) app.set('trust proxy', 1);
 const SESSION_COOKIE = 'rt_session';
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const ARGON_OPTIONS = { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 };
 const DUMMY_PASSWORD_HASH = argon2.hash(randomBytes(32).toString('hex'), ARGON_OPTIONS);
+
+function esProduccionPublica() {
+    if (process.env.VERCEL_ENV) return process.env.VERCEL_ENV === 'production';
+    return process.env.NODE_ENV === 'production';
+}
+
+async function inicializarAplicacion() {
+    if (!inicializacion) {
+        inicializacion = (async () => {
+            if (!process.env.DATABASE_URL) throw new Error('Falta DATABASE_URL en las variables de entorno.');
+            if (esProduccionPublica() && !process.env.APP_ORIGIN) {
+                throw new Error('Configura APP_ORIGIN con el dominio HTTPS de la aplicación.');
+            }
+            if (esProduccionPublica() && new URL(process.env.APP_ORIGIN).protocol !== 'https:') {
+                throw new Error('APP_ORIGIN debe usar HTTPS en producción.');
+            }
+            db = require('./base_datos');
+            await db.inicializar();
+        })().catch((error) => {
+            inicializacion = null;
+            throw error;
+        });
+    }
+    return inicializacion;
+}
+
+// Vercel ejecuta la aplicación bajo demanda; prepara Postgres una vez por
+// instancia antes de procesar rutas dinámicas. En local start() ya la prepara.
+app.use((req, res, next) => {
+    inicializarAplicacion().then(() => next()).catch(next);
+});
 
 class HttpError extends Error {
     constructor(status, message) {
@@ -587,25 +619,8 @@ app.use((req, res) => res.status(404).json({ error: 'La página o el recurso sol
     res.status(status).json({ error: mensaje });
 });
 
-async function configurarEntorno() {
-    if (!fs.existsSync(ENV_FILE)) {
-        throw new Error('No existe .env. Copia .env.example a .env y configura DATABASE_URL de Supabase.');
-    }
-    if (!process.env.DATABASE_URL) {
-        throw new Error('Falta DATABASE_URL en .env. Usa la cadena Postgres de Supabase (Connect > Session pooler si tu red solo usa IPv4).');
-    }
-}
-
 async function start() {
-    await configurarEntorno();
-    db = require('./base_datos');
-    if (process.env.NODE_ENV === 'production' && !process.env.APP_ORIGIN) {
-        throw new Error('Configura APP_ORIGIN con el origen HTTPS público antes de iniciar en producción.');
-    }
-    if (process.env.NODE_ENV === 'production' && new URL(process.env.APP_ORIGIN).protocol !== 'https:') {
-        throw new Error('APP_ORIGIN debe usar HTTPS en producción.');
-    }
-    await db.inicializar();
+    await inicializarAplicacion();
     if (!supabaseConfig().valido) {
         console.warn('Aviso: Supabase OAuth está desactivado. Configura SUPABASE_URL y SUPABASE_KEY reales en .env para usar GitHub.');
     }
@@ -627,3 +642,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.inicializarAplicacion = inicializarAplicacion;

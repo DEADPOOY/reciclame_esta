@@ -112,7 +112,7 @@ La aplicación guarda sus tablas en PostgreSQL de Supabase. Express se conecta c
 
 1. Crea un proyecto Supabase y espera a que termine de aprovisionarse.
 2. En **Connect**, copia la conexión de **Session pooler**. Codifica en formato URL los caracteres especiales de la contraseña. La conexión directa requiere IPv6 en algunos entornos.
-3. En **Project Settings > Database > SSL Configuration**, descarga el certificado CA de Supabase y guárdalo en la raíz del proyecto con el nombre `supabase-ca.crt`. La conexión verifica el certificado y el host; no desactives esta validación.
+3. En el menú principal del proyecto abre **Database > Settings > SSL Configuration**, descarga el certificado CA de Supabase y guárdalo en la raíz del proyecto con el nombre `supabase-ca.crt`. La conexión verifica el certificado y el host; no desactives esta validación.
 4. En tu `.env` actual configura `DATABASE_URL` con la URI y estos parámetros al final: `?sslmode=verify-full&sslrootcert=supabase-ca.crt`. Si la URI ya contiene parámetros, reemplaza `?` por `&`. Si aún no tienes `.env`, copia `.env.example` y completa sus valores. Conserva las variables `MYSQL_*` hasta terminar la importación. Deja también `SUPABASE_URL` y `SUPABASE_KEY` configurados para el login social. No compartas ni subas `.env` a Git.
 5. En el Dashboard de Supabase abre **SQL Editor**, pega el contenido de `base_de_datos/supabase_schema.sql` y ejecútalo.
 6. En la computadora que aún tiene MySQL instala dependencias (`npm install`) y conserva configuradas en `.env` las variables `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD` y `MYSQL_DATABASE` para esa base de origen.
@@ -122,6 +122,24 @@ La aplicación guarda sus tablas en PostgreSQL de Supabase. Express se conecta c
 En otro dispositivo solo necesitas clonar el proyecto, instalar dependencias, configurar `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_KEY` y `PORT` en su `.env`, y ejecutar `npm start`. No necesitas instalar ni mantener MySQL allí. La importación es una sola vez y solo desde el equipo que conserva el MySQL original.
 
 El importador presupone que el esquema fuente contiene las tablas de la aplicación. No migra usuarios internos de Supabase Auth; conserva las cuentas de ReciclaTech en la tabla propia `users`, incluyendo sus hashes de contraseña.
+
+### Publicar en Vercel
+
+El proyecto incluye un export de Express para Vercel, un proceso de build que copia HTML, CSS, JavaScript e imágenes a `public/`, y configuración para incluir el certificado CA de Supabase en la función. Vercel sirve los assets estáticos desde su CDN y ejecuta las rutas de Express como una función Node.
+
+1. Sube el proyecto a GitHub y en Vercel importa ese repositorio. El build command es `npm run build` (también está declarado en `vercel.json`).
+2. En Vercel > **Project Settings > Environment Variables**, configura:
+   - `DATABASE_URL`: URI de Supabase **Transaction pooler** (puerto `6543`), con `sslmode=verify-full&sslrootcert=supabase-ca.crt` al final. Vercel ejecuta funciones bajo demanda, así que usa transaction pooler y el pool de la app se limita a una conexión.
+   - `SUPABASE_URL`: Project URL de Supabase.
+   - `SUPABASE_KEY`: publishable/anon key, para el login de GitHub.
+   - `APP_ORIGIN`: origen HTTPS asignado por Vercel, por ejemplo `https://reciclatech.vercel.app` (sin `/` final).
+   No configures las variables `MYSQL_*` en Vercel; solo fueron necesarias para importar desde el MySQL local.
+3. El archivo `supabase-ca.crt` debe estar en el repositorio junto con el código. Es un certificado público de confianza, no una contraseña.
+4. En Supabase **Authentication > URL Configuration > Redirect URLs**, agrega `https://TU-DOMINIO-VERCEL/publico/Login.html*`.
+5. En la app OAuth de GitHub, conserva como **Authorization callback URL** el callback de Supabase `https://TU-PROYECTO.supabase.co/auth/v1/callback`; la IP local o el dominio de Vercel no sustituyen ese callback.
+6. Despliega y abre el dominio HTTPS de Vercel. La ubicación del celular funcionará en ese origen seguro; el HTTPS de Vercel también permite el flujo de GitHub.
+
+Para desarrollo local, conserva en tu `.env` la URI **Session pooler** del puerto `5432`; usa la URI Transaction pooler del puerto `6543` solo en Vercel.
 
 ## Inicio de sesión con GitHub (Supabase)
 

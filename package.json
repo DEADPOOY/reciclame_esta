@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "description": "Servidor Express para ReciclaTech con PostgreSQL en Supabase",
-  "main": "servidor/server.js",
+  "main": "index.js",
   "scripts": {
     "start": "node servidor/server.js",
-    "migrar:mysql-supabase": "node scripts/migrar_mysql_supabase.js"
+    "migrar:mysql-supabase": "node scripts/migrar_mysql_supabase.js",
+    "build": "node scripts/build_public.js"
   },
   "engines": {
     "node": ">=18"

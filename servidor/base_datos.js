@@ -8,7 +8,7 @@ if (!process.env.DATABASE_URL) {
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: Number(process.env.PG_POOL_MAX || 5),
+    max: Number(process.env.PG_POOL_MAX || (process.env.VERCEL ? 1 : 5)),
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000
 });
