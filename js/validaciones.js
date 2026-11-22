@@ -1,5 +1,7 @@
 const Validaciones = (() => {
-  const correoValido = (valor) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor);
+  const correoValido = (valor) => /^[a-z0-9._%+-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(valor);
+  const CARACTERES_CONTROL = /[\u0000-\u001F\u007F]/;
+  const ETIQUETAS_HTML = /[<>]/;
   const DOMINIOS = (typeof window !== 'undefined' && window.DOMINIOS_CORREO) ||
     { permitidos: [], bloqueados: [] };
   const dominioDe = (valor) => String(valor).trim().toLowerCase().split('@').pop();
@@ -66,6 +68,51 @@ const Validaciones = (() => {
     return true;
   }
 
+  function validarCorreo(campo, mensajeVacio) {
+    const valor = campo.value.trim();
+    campo.value = valor;
+    if (!valor) {
+      App.marcar(campo, mensajeVacio || 'Escribe tu correo electrónico.');
+      return false;
+    }
+    if (valor.length > 254) {
+      App.marcar(campo, 'El correo electrónico no puede superar 254 caracteres.');
+      return false;
+    }
+    if (!correoValido(valor) || CARACTERES_CONTROL.test(valor)) {
+      App.marcar(campo, 'Escribe un correo electrónico válido.');
+      return false;
+    }
+    App.marcar(campo, '');
+    return true;
+  }
+
+  function validarPassword(campo, esRegistro) {
+    const valor = campo.value;
+    if (!valor) {
+      App.marcar(campo, esRegistro ? 'Escribe una contraseña.' : 'Escribe tu contraseña.');
+      return false;
+    }
+    if (valor.length > 128) {
+      App.marcar(campo, 'La contraseña no puede superar 128 caracteres.');
+      return false;
+    }
+    if (esRegistro && valor.length < 12) {
+      App.marcar(campo, 'La contraseña debe tener al menos 12 caracteres.');
+      return false;
+    }
+    if (CARACTERES_CONTROL.test(valor)) {
+      App.marcar(campo, 'La contraseña contiene caracteres no permitidos.');
+      return false;
+    }
+    if (ETIQUETAS_HTML.test(valor)) {
+      App.marcar(campo, 'La contraseña no puede incluir los caracteres < o >.');
+      return false;
+    }
+    App.marcar(campo, '');
+    return true;
+  }
+
   function limpiarNombre(valor) {
     return Array.from(String(valor).toUpperCase(), (letra) => letra === 'Ñ'
       ? 'Ñ'
@@ -118,37 +165,30 @@ const Validaciones = (() => {
       if (!completo) valido = false;
       partesNombre.push(campo.value);
     });
-    valido = marcarRequerido(email, 'Escribe tu correo electrónico.') && valido;
-    if (email.value.trim() && !correoValido(email.value.trim())) {
-      App.marcar(email, 'Escribe un correo electrónico válido.');
+    const nombreCompleto = partesNombre.join(' ');
+    if (nombreCompleto.length > 160) {
+      App.marcar(form.apellido_materno, 'El nombre completo no puede superar 160 caracteres.');
       valido = false;
-    } else if (email.value.trim() && !dominioPermitido(email.value)) {
+    }
+    const correoOk = validarCorreo(email, 'Escribe tu correo electrónico.');
+    valido = correoOk && valido;
+    if (correoOk && !dominioPermitido(email.value)) {
       App.marcar(email, 'Esta terminación de correo no está permitida. Usa otro correo.');
       valido = false;
     }
-    valido = marcarRequerido(password, 'Escribe una contraseña.') && valido;
-    if (password.value.length < 12 || password.value.length > 128) {
-      App.marcar(password, 'La contraseña debe tener entre 12 y 128 caracteres.');
-      valido = false;
-    }
+    valido = validarPassword(password, true) && valido;
     valido = marcarRequerido(confirmar, 'Confirma tu contraseña.') && valido;
     if (confirmar.value && confirmar.value !== password.value) {
       App.marcar(confirmar, 'Las contraseñas no coinciden.');
       valido = false;
     }
-    if (valido) form.nombre.value = partesNombre.join(' ');
+    if (valido) form.nombre.value = nombreCompleto;
     return valido;
   }
 
   function login(form) {
-    const email = form.email;
-    const password = form.password;
-    let valido = marcarRequerido(email, 'Escribe tu correo electrónico.');
-    if (email.value.trim() && !correoValido(email.value.trim())) {
-      App.marcar(email, 'Escribe un correo electrónico válido.');
-      valido = false;
-    }
-    valido = marcarRequerido(password, 'Escribe tu contraseña.') && valido;
+    let valido = validarCorreo(form.email, 'Escribe tu correo electrónico.');
+    valido = validarPassword(form.password, false) && valido;
     return valido;
   }
 

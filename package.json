@@ -2,10 +2,11 @@
   "name": "reciclatech",
   "version": "1.0.0",
   "private": true,
-  "description": "Servidor local para la aplicación ReciclaTech",
+  "description": "Servidor Express para ReciclaTech con PostgreSQL en Supabase",
   "main": "servidor/server.js",
   "scripts": {
-    "start": "node servidor/server.js"
+    "start": "node servidor/server.js",
+    "migrar:mysql-supabase": "node scripts/migrar_mysql_supabase.js"
   },
   "engines": {
     "node": ">=18"
@@ -17,6 +18,7 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0",
-    "mysql2": "^3.14.1"
+    "mysql2": "^3.14.1",
+    "pg": "^8.16.3"
   }
 }

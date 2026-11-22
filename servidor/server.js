@@ -5,7 +5,6 @@ const argon2 = require('argon2');
 const { createHash, randomBytes } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const readline = require('node:readline/promises');
 
 const ROOT = path.resolve(__dirname, '..');
 const ENV_FILE = path.join(ROOT, '.env');
@@ -67,7 +66,10 @@ function requiredText(value, label, maxLength) {
 }
 
 const TEXTO_PUNTO = /^[\p{L}\p{N}\s.,#'&()\/:;°º·–—\-!?¡¿%]+$/u;
+const TEXTO_PERSONA = /^[\p{L}\p{M}\s.'-]+$/u;
 const TIENE_LETRA = /\p{L}/u;
+const CARACTERES_CONTROL = /[\u0000-\u001F\u007F]/;
+const CORREO_VALIDO = /^[a-z0-9._%+-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
 
 function textoPunto(value, label, minLength, maxLength) {
     const texto = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
@@ -85,6 +87,14 @@ function textoPunto(value, label, minLength, maxLength) {
         throw new HttpError(400, 'El campo ' + label + ' debe incluir al menos una letra.');
     }
     return texto;
+}
+
+function validarNombrePersona(value) {
+    const nombre = requiredText(value, 'El nombre completo', 160).replace(/\s+/g, ' ');
+    if (!TIENE_LETRA.test(nombre) || !TEXTO_PERSONA.test(nombre)) {
+        throw new HttpError(400, 'El nombre completo solo puede llevar letras, espacios, puntos, apóstrofes y guiones.');
+    }
+    return nombre;
 }
 
 function parseId(value) {
@@ -107,7 +117,9 @@ function dominioCorreoBloqueado(email) {
 
 function validarEmail(value, esRegistro = false) {
     const email = requiredText(value, 'El correo electrónico', 254).toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'Escribe un correo electrónico válido.');
+    if (!CORREO_VALIDO.test(email) || CARACTERES_CONTROL.test(email)) {
+        throw new HttpError(400, 'Escribe un correo electrónico válido.');
+    }
     if (esRegistro && dominioCorreoBloqueado(email)) {
         throw new HttpError(400, 'Esta terminación de correo no está permitida. Usa otro correo.');
     }
@@ -115,12 +127,21 @@ function validarEmail(value, esRegistro = false) {
 }
 
 function validarPassword(value, esRegistro) {
-    if (typeof value !== 'string' || value.length > 128 || (esRegistro && (value.length < 12 || !value.trim()))) {
-        throw new HttpError(400, esRegistro
-        ? 'La contraseña debe tener entre 12 y 128 caracteres.'
-        : 'La contraseña no es válida.');
+    if (typeof value !== 'string' || value.length > 128) {
+        throw new HttpError(400, 'La contraseña no es válida.');
     }
-    if (!esRegistro && !value.length) throw new HttpError(400, 'La contraseña es obligatoria.');
+    if (!value.length) {
+        throw new HttpError(400, esRegistro ? 'La contraseña debe tener entre 12 y 128 caracteres.' : 'La contraseña es obligatoria.');
+    }
+    if (esRegistro && value.length < 12) {
+        throw new HttpError(400, 'La contraseña debe tener entre 12 y 128 caracteres.');
+    }
+    if (CARACTERES_CONTROL.test(value)) {
+        throw new HttpError(400, 'La contraseña contiene caracteres no permitidos.');
+    }
+    if (/[<>]/.test(value)) {
+        throw new HttpError(400, 'La contraseña no puede incluir los caracteres < o >.');
+    }
     return value;
 }
 
@@ -128,10 +149,10 @@ function validarPassword(value, esRegistro) {
 
 async function crearSesion(connection, userId) {
     const token = randomBytes(32).toString('base64url');
-    await connection.execute('DELETE FROM sessions WHERE expires_at <= UTC_TIMESTAMP()');
+    await connection.execute('DELETE FROM sessions WHERE expires_at <= CURRENT_TIMESTAMP');
     await connection.execute(
-        'INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 DAY))',
-        [hashSesion(token), userId]
+        'INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)',
+        [hashSesion(token), userId, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)]
     );
     return token;
 }
@@ -350,7 +371,7 @@ const authRateLimit = rateLimiter(10, 'Demasiados intentos. Espera un momento e 
 
 app.post('/api/auth/register', authRateLimit, asyncRoute(async (req, res) => {
     const data = requireObject(req.body);
-    const nombre = requiredText(data.nombre, 'El nombre completo', 160);
+    const nombre = validarNombrePersona(data.nombre);
     const email = validarEmail(data.email, true);
     const password = validarPassword(data.password, true);
     const passwordHash = await argon2.hash(password, ARGON_OPTIONS);
@@ -419,12 +440,14 @@ app.post('/api/auth/supabase', oauthRateLimit, asyncRoute(async (req, res) => {
         throw new HttpError(403, 'Ese proveedor no está permitido. Usa GitHub.');
     }
     const email = perfil && typeof perfil.email === 'string' ? perfil.email.trim().toLowerCase() : '';
-    if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (email.length > 254 || !CORREO_VALIDO.test(email) || CARACTERES_CONTROL.test(email)) {
         throw new HttpError(401, 'Supabase no devolvió un correo electrónico válido.');
     }
     const meta = perfil.user_metadata && typeof perfil.user_metadata === 'object' ? perfil.user_metadata : {};
-    const nombre = String(meta.full_name || meta.name || meta.preferred_username || meta.user_name || email.split('@')[0])
-        .trim().replace(/\s+/g, ' ').slice(0, 160) || 'Usuario';
+    const nombreMeta = String(meta.full_name || meta.name || meta.preferred_username || meta.user_name || '')
+        .trim().replace(/\s+/g, ' ').slice(0, 160);
+    const nombre = nombreMeta && TIENE_LETRA.test(nombreMeta) && TEXTO_PERSONA.test(nombreMeta)
+        ? nombreMeta : 'Usuario';
 
     // Si la cuenta ya existe se reutiliza (conserva su rol). Si es nueva, se crea
     // con un hash aleatorio porque estos usuarios no usan contraseña local.
@@ -553,7 +576,7 @@ app.use((req, res) => res.status(404).json({ error: 'La página o el recurso sol
 
     app.use((error, req, res, next) => {
     if (res.headersSent) return next(error);
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (error.code === '23505') {
         return res.status(409).json({ error: 'Ya existe un registro con esos datos.' });
     }
     const status = Number.isInteger(error.status) ? error.status : 500;
@@ -564,73 +587,12 @@ app.use((req, res) => res.status(404).json({ error: 'La página o el recurso sol
     res.status(status).json({ error: mensaje });
 });
 
-function dotenvValue(value) {
-    return JSON.stringify(value);
-}
-
-function preguntarSecreto(label, fallback) {
-    if (!process.stdin.isTTY || typeof process.stdin.setRawMode !== 'function') return Promise.resolve(fallback);
-    process.stdout.write(`${label} [entrada oculta; Enter usa el valor sugerido]: `);
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    return new Promise((resolve, reject) => {
-        let value = '';
-        const terminar = (error) => {
-            process.stdin.removeListener('data', recibir);
-            process.stdin.setRawMode(false);
-            process.stdin.pause();
-            process.stdout.write('\n');
-            if (error) reject(error);
-            else resolve(value || fallback);
-        };
-        const recibir = (buffer) => {
-            const key = buffer.toString();
-            if (key === '\u0003') return terminar(new Error('Configuración cancelada.'));
-            if (key === '\r' || key === '\n') return terminar();
-            if (key === '\u007f' || key === '\b') {
-                if (value) {
-                    value = value.slice(0, -1);
-                    process.stdout.write('\b \b');
-                }
-                return;
-            }
-            value += key;
-            process.stdout.write('*');
-        };
-        process.stdin.on('data', recibir);
-    });
-}
-
 async function configurarEntorno() {
-    if (fs.existsSync(ENV_FILE)) return;
-    if (!process.stdin.isTTY || !process.stdout.isTTY) {
-        throw new Error('No existe .env. Inicia el servidor desde una terminal interactiva para configurarlo.');
+    if (!fs.existsSync(ENV_FILE)) {
+        throw new Error('No existe .env. Copia .env.example a .env y configura DATABASE_URL de Supabase.');
     }
-
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const preguntar = async (label, fallback) => {
-        const answer = (await rl.question(`${label} [${fallback}]: `)).trim();
-        return answer || fallback;
-    };
-
-    try {
-        console.log('Configuración inicial de ReciclaTech (MySQL local).');
-        const host = await preguntar('Host de MySQL (ej. localhost o 127.0.0.1)', 'localhost');
-        const port = await preguntar('Puerto de MySQL', '3306');
-        const user = await preguntar('Usuario de MySQL', 'reciclame_esta');
-        const database = await preguntar('Base de datos', 'reciclame_esta');
-        const appPort = await preguntar('Puerto del servidor web', '3000');
-        rl.close();
-        const password = await preguntarSecreto('Contraseña de MySQL', 'CAMBIA_ESTA_CONTRASENA');
-
-        const values = { MYSQL_HOST: host, MYSQL_PORT: port, MYSQL_USER: user, MYSQL_PASSWORD: password,
-            MYSQL_DATABASE: database, PORT: appPort };
-        const contents = Object.entries(values).map(([key, value]) => `${key}=${dotenvValue(value)}`).join('\n') + '\n';
-        fs.writeFileSync(ENV_FILE, contents, { flag: 'wx', mode: 0o600 });
-        Object.assign(process.env, values);
-        console.log('Configuración guardada en .env.');
-    } finally {
-        rl.close();
+    if (!process.env.DATABASE_URL) {
+        throw new Error('Falta DATABASE_URL en .env. Usa la cadena Postgres de Supabase (Connect > Session pooler si tu red solo usa IPv4).');
     }
 }
 
@@ -654,9 +616,9 @@ async function start() {
 if (require.main === module) {
     start().catch((error) => {
         if (error.code === 'ENOTFOUND' || error.code === 'EAI_AGAIN') {
-            console.error('No se pudo resolver el host de MySQL. Revisa MYSQL_HOST en .env (usa localhost o 127.0.0.1).');
-        } else if (error.code === 'ER_ACCESS_DENIED_ERROR') {
-            console.error('MySQL rechazó el usuario o la contraseña. Revisa MYSQL_USER y MYSQL_PASSWORD en .env.');
+            console.error('No se pudo resolver el host de Postgres. Revisa DATABASE_URL en .env.');
+        } else if (error.code === '28P01') {
+            console.error('Supabase rechazó la contraseña de la base de datos. Revisa DATABASE_URL en .env.');
         } else {
             console.error('No se pudo iniciar ReciclaTech:', error.message);
         }

@@ -104,32 +104,24 @@ ps hay dos archivos vamos directo esta madre
 
 y con esto marcariamos el punto final de este bonito proyecto ya como ultimo lo ultimo son pequeños cambios que are talvez muy necesarios pero al final ya estan casi todos hechos
 
-### Iniciar el servidor local
+### Usar Supabase como base de datos
 
-Se necesita Node.js 18 o posterior y MySQL. Desde la carpeta principal del proyecto:
+La aplicación guarda sus tablas en PostgreSQL de Supabase. Express se conecta con `DATABASE_URL` desde el servidor; el navegador nunca recibe la contraseña de la base. El archivo `base_de_datos/supabase_schema.sql` crea el esquema y el servidor lo vuelve a aplicar de forma segura al iniciar.
 
-1. Inicializa MySQL con el esquema y el usuario de la aplicación:
+#### Preparación inicial
 
-   ```bash
-   mysql -u root -p < base_de_datos/Reciclame_esta.sql
-   ```
+1. Crea un proyecto Supabase y espera a que termine de aprovisionarse.
+2. En **Connect**, copia la conexión de **Session pooler**. Codifica en formato URL los caracteres especiales de la contraseña. La conexión directa requiere IPv6 en algunos entornos.
+3. En **Project Settings > Database > SSL Configuration**, descarga el certificado CA de Supabase y guárdalo en la raíz del proyecto con el nombre `supabase-ca.crt`. La conexión verifica el certificado y el host; no desactives esta validación.
+4. En tu `.env` actual configura `DATABASE_URL` con la URI y estos parámetros al final: `?sslmode=verify-full&sslrootcert=supabase-ca.crt`. Si la URI ya contiene parámetros, reemplaza `?` por `&`. Si aún no tienes `.env`, copia `.env.example` y completa sus valores. Conserva las variables `MYSQL_*` hasta terminar la importación. Deja también `SUPABASE_URL` y `SUPABASE_KEY` configurados para el login social. No compartas ni subas `.env` a Git.
+5. En el Dashboard de Supabase abre **SQL Editor**, pega el contenido de `base_de_datos/supabase_schema.sql` y ejecútalo.
+6. En la computadora que aún tiene MySQL instala dependencias (`npm install`) y conserva configuradas en `.env` las variables `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD` y `MYSQL_DATABASE` para esa base de origen.
+7. Detén la aplicación para que no haya cambios nuevos mientras copias los datos. Ejecuta una sola vez `npm run migrar:mysql-supabase`. El importador copia `users`, `residuos`, `puntos`, `sessions`, `reportes` y `bitacora` dentro de una transacción. Si alguna tabla destino ya contiene filas, se detiene para evitar duplicados; usa un proyecto Supabase vacío para importar.
+8. Cuando el importador confirme que terminó, inicia la aplicación con `npm start` y abre <http://localhost:3000>. A partir de ahí, las lecturas y escrituras de la app ya van a Supabase. Mantén MySQL como respaldo hasta comprobar la aplicación.
 
-2. Instala las dependencias e inicia el servidor:
+En otro dispositivo solo necesitas clonar el proyecto, instalar dependencias, configurar `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_KEY` y `PORT` en su `.env`, y ejecutar `npm start`. No necesitas instalar ni mantener MySQL allí. La importación es una sola vez y solo desde el equipo que conserva el MySQL original.
 
-   ```bash
-   npm install
-   npm start
-   ```
-
-   En el primer inicio, el servidor pregunta los datos de conexión a MySQL y crea `.env` en la carpeta principal. Los valores sugeridos corresponden al usuario creado por el SQL; introduce la contraseña configurada en MySQL.
-
-3. Abre <http://localhost:3000>. Para cargar los datos ficticios de prueba, en otra terminal ejecuta:
-
-   ```bash
-   mysql -h localhost -u reciclame_esta -p reciclame_esta < base_de_datos/datos_de_ejemplo.sql
-   ```
-
-No subas `.env` a Git: contiene la contraseña de MySQL.
+El importador presupone que el esquema fuente contiene las tablas de la aplicación. No migra usuarios internos de Supabase Auth; conserva las cuentas de ReciclaTech en la tabla propia `users`, incluyendo sus hashes de contraseña.
 
 ## Inicio de sesión con GitHub (Supabase)
 
