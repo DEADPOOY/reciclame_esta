@@ -223,12 +223,6 @@ Object.assign(window.Paginas, (() => {
       });
     });
 
-    const urlMapa = (p) => 'https://www.google.com/maps/embed?origin=mfe&pb=!1m2!2m1!1s' +
-    encodeURIComponent(consultaMapa(p));
-  const urlMapaGrande = (p) => 'https://www.google.com/maps/search/?api=1&query=' +
-    encodeURIComponent(consultaMapa(p));
-
-
     $('revocar').addEventListener('click', () => {
       const p = API.punto(sel.value); if (!p) { App.requerido(sel, 'Elige un punto.'); return; }
       App.ejecutar(async () => {
