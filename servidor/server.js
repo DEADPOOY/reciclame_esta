@@ -522,10 +522,25 @@ app.post('/api/auth/supabase', oauthRateLimit, asyncRoute(async (req, res) => {
 
 app.get('/api/config', (req, res) => {
     const config = supabaseConfig();
+    const urlPresente = Boolean(String(process.env.SUPABASE_URL || '').trim());
+    const keyPresente = Boolean(String(
+        process.env.SUPABASE_KEY
+        || process.env.SUPABASE_ANON_KEY
+        || process.env.SUPABASE_PUBLISHABLE_KEY
+        || ''
+    ).trim());
     res.json({
         supabaseConfigurado: config.valido,
         supabaseUrl: config.valido ? config.url : '',
-        supabaseKey: config.valido ? config.key : ''
+        supabaseKey: config.valido ? config.key : '',
+        diagnostico: {
+            entorno: process.env.VERCEL_ENV || process.env.NODE_ENV || '',
+            supabaseUrlPresente: urlPresente,
+            supabaseKeyPresente: keyPresente,
+            supabaseUrlValida: /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(config.url),
+            supabaseKeyValida: Boolean(config.key) && esClavePublicaSupabase(config.key),
+            variablesSupabase: Object.keys(process.env).filter((nombre) => nombre.startsWith('SUPABASE_')).sort()
+        }
     });
 });
 
