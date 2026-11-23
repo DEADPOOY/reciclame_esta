@@ -133,3 +133,21 @@ SELECT id, nombre, alcaldia, -- Devuelve identificador, nombre y alcaldía de ca
        JSON_UNQUOTE(JSON_EXTRACT(ficha, '$.estado')) AS ficha_estado -- Extrae el estado del JSON y lo devuelve como texto.
 FROM puntos -- Lee los registros de la tabla de centros.
 ORDER BY id; -- Ordena el resultado por identificador ascendente.
+
+INSERT INTO puntos
+  (nombre, calle, colonia, alcaldia, cp, residuos, horarios, ficha)
+VALUES
+-- Centro de ejemplo 6
+('စိုင်တောင်ကျောင်းတိုက် (ejemplo)',
+ '7MXM+WH', 'anyin', 'chaung-U', '0203301',
+ JSON_ARRAY('Celulares y tablets','Computadoras y laptops'),
+ JSON_OBJECT(
+   'lunes',     JSON_OBJECT('abre','09:00','cierra','17:00','cerrado',false),
+   'martes',    JSON_OBJECT('abre','09:00','cierra','17:00','cerrado',false),
+   'miercoles', JSON_OBJECT('abre','09:00','cierra','17:00','cerrado',false),
+   'jueves',    JSON_OBJECT('abre','09:00','cierra','17:00','cerrado',false),
+   'viernes',   JSON_OBJECT('abre','09:00','cierra','17:00','cerrado',false),
+   'sabado',    JSON_OBJECT('abre','','cierra','','cerrado',true),
+   'domingo',   JSON_OBJECT('abre','','cierra','','cerrado',true)
+ ),
+ JSON_OBJECT('numero','','fecha','','archivo','','estado','pendiente'));

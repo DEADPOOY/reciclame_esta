@@ -1,5 +1,17 @@
-// Cliente de Supabase del navegador.
-// La configuración ya no se escribe aquí: el servidor la expone en /api/config
-// a partir de SUPABASE_URL y SUPABASE_KEY del archivo .env.
-// El cliente se inicializa en js/supabase_cliente.js con el bundle UMD servido
-// localmente en /vendor/supabase/supabase.js.
+// src/supabaseClient.js
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseUrl = 'https://supabase.co'
+const supabaseKey = 'sb_publishable_VCrpcK60ktvkrxoWUs6h9w_wHdpXgJm'
+
+export const supabase = createClient(supabaseUrl, supabaseKey)
+
+
+async function loginConGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + '/dashboard.html' // A donde va tras iniciar sesión
+    }
+  })
+}
