@@ -6,10 +6,11 @@ const path = require('node:path');
 // Acepta el nombre documentado y también los que crea la integración de
 // Supabase en Vercel (POSTGRES_URL, etc.), para que la app no dependa de un
 // único nombre de variable.
-const nombreVariableConexion = process.env.DATABASE_URL ? 'DATABASE_URL'
+const nombreVariableConexion = process.env.RECICLATECH_DATABASE_URL ? 'RECICLATECH_DATABASE_URL'
+    : process.env.DATABASE_URL ? 'DATABASE_URL'
+    : process.env.SUPABASE_DB_URL ? 'SUPABASE_DB_URL'
     : process.env.POSTGRES_URL ? 'POSTGRES_URL'
     : process.env.POSTGRES_URL_NON_POOLING ? 'POSTGRES_URL_NON_POOLING'
-    : process.env.SUPABASE_DB_URL ? 'SUPABASE_DB_URL'
     : '';
 const databaseUrlRaw = nombreVariableConexion ? process.env[nombreVariableConexion] : '';
 

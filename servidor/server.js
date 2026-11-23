@@ -28,9 +28,10 @@ function esClavePublicaSupabase(key) {
 // Configuración de Supabase para el inicio de sesión con GitHub.
 // La publishable/anon key es pública, así que se puede enviar al navegador.
 function supabaseConfig() {
-    const url = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
+    const url = String(process.env.RECICLATECH_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
     const key = String(
-        process.env.SUPABASE_KEY
+        process.env.RECICLATECH_SUPABASE_KEY
+        || process.env.SUPABASE_KEY
         || process.env.SUPABASE_ANON_KEY
         || process.env.SUPABASE_PUBLISHABLE_KEY
         || ''
@@ -62,10 +63,11 @@ function validarOrigenesProduccion() {
 async function inicializarAplicacion() {
     if (!inicializacion) {
         inicializacion = (async () => {
-            const conexion = process.env.DATABASE_URL
+            const conexion = process.env.RECICLATECH_DATABASE_URL
+                || process.env.DATABASE_URL
+                || process.env.SUPABASE_DB_URL
                 || process.env.POSTGRES_URL
-                || process.env.POSTGRES_URL_NON_POOLING
-                || process.env.SUPABASE_DB_URL;
+                || process.env.POSTGRES_URL_NON_POOLING;
             if (!conexion) throw new Error('Falta DATABASE_URL en las variables de entorno.');
             validarOrigenesProduccion();
             db = require('./base_datos');
@@ -522,9 +524,12 @@ app.post('/api/auth/supabase', oauthRateLimit, asyncRoute(async (req, res) => {
 
 app.get('/api/config', (req, res) => {
     const config = supabaseConfig();
-    const urlPresente = Boolean(String(process.env.SUPABASE_URL || '').trim());
+    const urlPresente = Boolean(String(
+        process.env.RECICLATECH_SUPABASE_URL || process.env.SUPABASE_URL || ''
+    ).trim());
     const keyPresente = Boolean(String(
-        process.env.SUPABASE_KEY
+        process.env.RECICLATECH_SUPABASE_KEY
+        || process.env.SUPABASE_KEY
         || process.env.SUPABASE_ANON_KEY
         || process.env.SUPABASE_PUBLISHABLE_KEY
         || ''
@@ -539,7 +544,9 @@ app.get('/api/config', (req, res) => {
             supabaseKeyPresente: keyPresente,
             supabaseUrlValida: /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(config.url),
             supabaseKeyValida: Boolean(config.key) && esClavePublicaSupabase(config.key),
-            variablesSupabase: Object.keys(process.env).filter((nombre) => nombre.startsWith('SUPABASE_')).sort()
+            variablesSupabase: Object.keys(process.env)
+                .filter((nombre) => nombre.startsWith('SUPABASE_') || nombre.startsWith('RECICLATECH_SUPABASE_'))
+                .sort()
         }
     });
 });
