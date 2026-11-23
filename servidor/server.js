@@ -637,9 +637,7 @@ function mensajeDiagnostico(error) {
     const codigo = error && error.code ? String(error.code) : '';
     const mensaje = error && error.message ? String(error.message) : '';
     if (mensaje.includes('Falta DATABASE_URL')) return 'Falta DATABASE_URL en las variables de entorno de Production.';
-    if (mensaje.includes('Invalid URL') || mensaje.includes('DATABASE_URL no es')) {
-        return 'DATABASE_URL no es válida. Codifica la contraseña: el carácter @ debe ir como %40.';
-    }
+    if (mensaje.includes('DATABASE_URL')) return mensaje;
     if (mensaje.includes('Configura APP_ORIGIN') || mensaje.includes('APP_ORIGIN')) return mensaje;
     if (codigo === 'ENOENT') return 'No se encontró supabase-ca.crt en el despliegue.';
     if (codigo === '28P01') return 'Supabase rechazó la contraseña de DATABASE_URL.';

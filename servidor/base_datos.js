@@ -16,13 +16,30 @@ if (!databaseUrlRaw) {
     throw new Error('Falta DATABASE_URL. Configura la conexión de Postgres de Supabase en .env.');
 }
 
-const ROOT = path.resolve(__dirname, '..');
-let databaseUrl;
-try {
-    databaseUrl = new URL(databaseUrlRaw);
-} catch {
-    throw new Error('DATABASE_URL no es una URL válida. Codifica la contraseña en la URI.');
+function crearUrlBaseDatos(valor) {
+    const original = String(valor);
+    const limpio = original.trim();
+    if (/^DATABASE_URL\s*=/i.test(limpio)) {
+        throw new Error('El valor de DATABASE_URL incluye el prefijo "DATABASE_URL=". Pega solo la URI que empieza con postgresql://.');
+    }
+    if (/^['"]/.test(limpio) || /['"]$/.test(limpio)) {
+        throw new Error('El valor de DATABASE_URL tiene comillas. Quita las comillas.');
+    }
+    if (/[\r\n]/.test(original)) {
+        throw new Error('El valor de DATABASE_URL tiene saltos de línea. Pégalo en una sola línea.');
+    }
+    if (!/^postgres(ql)?:\/\//i.test(limpio)) {
+        throw new Error('El valor de DATABASE_URL debe empezar con postgresql://.');
+    }
+    try {
+        return new URL(limpio);
+    } catch {
+        throw new Error('DATABASE_URL no es una URL válida. Revisa que la contraseña no tenga espacios y que el @ esté como %40.');
+    }
 }
+
+const ROOT = path.resolve(__dirname, '..');
+const databaseUrl = crearUrlBaseDatos(databaseUrlRaw);
 // Ruta estática: Vercel puede incluir este certificado en el bundle de Node.
 const supabaseCa = fsSync.readFileSync(path.join(ROOT, 'supabase-ca.crt'), 'utf8');
 databaseUrl.searchParams.delete('sslmode');
