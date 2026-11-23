@@ -201,7 +201,7 @@ function tokenSesion(req) {
 }
 
 function cookieSegura() {
-    return esProduccionPublica() || Boolean(process.env.VERCEL);
+    return esProduccionPublica() || process.env.VERCEL === '1';
 }
 
 function establecerCookie(res, token) {

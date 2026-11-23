@@ -132,7 +132,7 @@ El proyecto exporta Express desde la raíz y guarda HTML, CSS, JavaScript e imá
    - `DATABASE_URL`: URI de Supabase **Transaction pooler** (puerto `6543`), con `sslmode=verify-full&sslrootcert=supabase-ca.crt` al final. Vercel ejecuta funciones bajo demanda, así que usa transaction pooler y el pool de la app se limita a una conexión.
    - `SUPABASE_URL`: Project URL de Supabase.
    - `SUPABASE_KEY`: publishable/anon key, para el login de GitHub.
-   - `APP_ORIGIN`: dominio HTTPS final de la app, por ejemplo `https://reciclatech.vercel.app` (sin `/` final). Si usas un dominio propio, este es el valor principal.
+   - `APP_ORIGIN`: dominio HTTPS final de la app, por ejemplo `https://reciclatech.vercel.app` (sin `/` final). Si usas un dominio propio, este es el valor principal; si no lo configuras, se usa el dominio que entrega Vercel.
    - `APP_ORIGINS` (opcional): varios dominios separados por comas, por ejemplo `https://reciclatech.vercel.app,https://www.reciclatech.com`. El servidor también detecta automáticamente `VERCEL_URL`, `VERCEL_BRANCH_URL` y `VERCEL_PROJECT_PRODUCTION_URL` para que funcionen las previews.
    No configures las variables `MYSQL_*` en Vercel; solo fueron necesarias para importar desde el MySQL local.
 3. El archivo `supabase-ca.crt` ya está incluido en el repositorio. Es un certificado público de confianza, no una contraseña.
@@ -144,6 +144,7 @@ El proyecto exporta Express desde la raíz y guarda HTML, CSS, JavaScript e imá
 
 | Dónde se configura | Valor |
 | --- | --- |
+| Supabase > Site URL | `https://TU-DOMINIO-VERCEL` |
 | Supabase > Redirect URLs (local) | `http://localhost:3000/publico/Login.html*` |
 | Supabase > Redirect URLs (producción) | `https://TU-DOMINIO-VERCEL/publico/Login.html*` |
 | Supabase > Redirect URLs (previews) | `https://*-TU-EQUIPO.vercel.app/publico/Login.html*` |
