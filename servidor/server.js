@@ -622,13 +622,40 @@ app.use('/css', express.static(path.join(ROOT, 'css'), { dotfiles: 'deny', index
 app.use('/vendor/supabase', express.static(path.join(ROOT, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd'), { dotfiles: 'deny', index: false }));
 app.use((req, res) => res.status(404).json({ error: 'La página o el recurso solicitado no existe.' }));
 
-    app.use((error, req, res, next) => {
+// El endpoint de salud puede explicar fallos de configuración sin exponer
+// credenciales. Las rutas normales siguen devolviendo un mensaje genérico.
+function mensajeDiagnostico(error) {
+    const codigo = error && error.code ? String(error.code) : '';
+    const mensaje = error && error.message ? String(error.message) : '';
+    if (mensaje.includes('Falta DATABASE_URL')) return 'Falta DATABASE_URL en las variables de entorno de Production.';
+    if (mensaje.includes('Invalid URL') || mensaje.includes('DATABASE_URL no es')) {
+        return 'DATABASE_URL no es válida. Codifica la contraseña: el carácter @ debe ir como %40.';
+    }
+    if (mensaje.includes('Configura APP_ORIGIN') || mensaje.includes('APP_ORIGIN')) return mensaje;
+    if (codigo === 'ENOENT') return 'No se encontró supabase-ca.crt en el despliegue.';
+    if (codigo === '28P01') return 'Supabase rechazó la contraseña de DATABASE_URL.';
+    if (codigo === '28000') return 'Supabase rechazó el usuario de DATABASE_URL.';
+    if (codigo === 'ENOTFOUND' || codigo === 'EAI_AGAIN') return 'No se pudo resolver el host de DATABASE_URL.';
+    if (codigo === 'ECONNREFUSED') return 'No se pudo conectar al host o puerto de DATABASE_URL.';
+    if (codigo === 'ETIMEDOUT' || codigo === 'CONNECT_TIMEOUT') return 'La conexión a Supabase agotó el tiempo de espera.';
+    if (codigo === '42P01') return 'Falta una tabla en Supabase. Ejecuta base_de_datos/supabase_schema.sql.';
+    if (codigo === '42501') return 'El usuario de DATABASE_URL no tiene permisos sobre las tablas.';
+    if (/self[- ]signed|certificate|CERT_|UNABLE_TO_VERIFY/i.test(mensaje)) {
+        return 'El certificado CA de Supabase no coincide o no se incluyó en el despliegue.';
+    }
+    return 'Error interno de inicialización: ' + (mensaje || 'sin detalle');
+}
+
+app.use((error, req, res, next) => {
     if (res.headersSent) return next(error);
     if (error.code === '23505') {
         return res.status(409).json({ error: 'Ya existe un registro con esos datos.' });
     }
     const status = Number.isInteger(error.status) ? error.status : 500;
     if (status >= 500 && !(error instanceof HttpError)) console.error(error);
+    if (req.path === '/api/health' && status >= 500) {
+        return res.status(status).json({ ok: false, error: mensajeDiagnostico(error), code: error.code || null });
+    }
     const mensaje = error instanceof HttpError
         ? error.message
         : 'Ocurrió un error en el servidor. Intenta de nuevo más tarde.';
