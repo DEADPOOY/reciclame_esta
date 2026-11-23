@@ -6,11 +6,12 @@ const path = require('node:path');
 // Acepta el nombre documentado y también los que crea la integración de
 // Supabase en Vercel (POSTGRES_URL, etc.), para que la app no dependa de un
 // único nombre de variable.
-const databaseUrlRaw = process.env.DATABASE_URL
-    || process.env.POSTGRES_URL
-    || process.env.POSTGRES_URL_NON_POOLING
-    || process.env.SUPABASE_DB_URL
-    || '';
+const nombreVariableConexion = process.env.DATABASE_URL ? 'DATABASE_URL'
+    : process.env.POSTGRES_URL ? 'POSTGRES_URL'
+    : process.env.POSTGRES_URL_NON_POOLING ? 'POSTGRES_URL_NON_POOLING'
+    : process.env.SUPABASE_DB_URL ? 'SUPABASE_DB_URL'
+    : '';
+const databaseUrlRaw = nombreVariableConexion ? process.env[nombreVariableConexion] : '';
 
 if (!databaseUrlRaw) {
     throw new Error('Falta DATABASE_URL. Configura la conexión de Postgres de Supabase en .env.');
@@ -19,22 +20,23 @@ if (!databaseUrlRaw) {
 function crearUrlBaseDatos(valor) {
     const original = String(valor);
     const limpio = original.trim();
+    const esquema = limpio.match(/^([a-z][a-z0-9+.-]*):\/\//i)?.[1] || '(sin esquema)';
     if (/^DATABASE_URL\s*=/i.test(limpio)) {
-        throw new Error('El valor de DATABASE_URL incluye el prefijo "DATABASE_URL=". Pega solo la URI que empieza con postgresql://.');
+        throw new Error('El valor de ' + nombreVariableConexion + ' incluye el prefijo "DATABASE_URL=". Pega solo la URI que empieza con postgresql://.');
     }
     if (/^['"]/.test(limpio) || /['"]$/.test(limpio)) {
-        throw new Error('El valor de DATABASE_URL tiene comillas. Quita las comillas.');
+        throw new Error('El valor de ' + nombreVariableConexion + ' tiene comillas. Quita las comillas.');
     }
     if (/[\r\n]/.test(original)) {
-        throw new Error('El valor de DATABASE_URL tiene saltos de línea. Pégalo en una sola línea.');
+        throw new Error('El valor de ' + nombreVariableConexion + ' tiene saltos de línea. Pégalo en una sola línea.');
     }
     if (!/^postgres(ql)?:\/\//i.test(limpio)) {
-        throw new Error('El valor de DATABASE_URL debe empezar con postgresql://.');
+        throw new Error('El valor de ' + nombreVariableConexion + ' debe empezar con postgresql://. Esquema detectado: ' + esquema + '. Longitud: ' + limpio.length + '.');
     }
     try {
         return new URL(limpio);
     } catch {
-        throw new Error('DATABASE_URL no es una URL válida. Revisa que la contraseña no tenga espacios y que el @ esté como %40.');
+        throw new Error(nombreVariableConexion + ' no es una URL válida. Revisa que la contraseña no tenga espacios y que el @ esté como %40.');
     }
 }
 
