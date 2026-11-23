@@ -132,8 +132,8 @@ El proyecto exporta Express desde la raíz y guarda HTML, CSS, JavaScript e imá
    - `DATABASE_URL`: URI de Supabase **Session pooler** (puerto `5432`), con `sslmode=verify-full&sslrootcert=supabase-ca.crt` al final. En Vercel el pool de la app se limita a una conexión con `PG_POOL_MAX=1`.
    - `SUPABASE_URL`: Project URL de Supabase.
    - `SUPABASE_KEY`: publishable/anon key, para el login de GitHub.
-   - `APP_ORIGIN`: dominio HTTPS final de la app, por ejemplo `https://reciclamesta.vercel.app` (sin `/` final). Si usas un dominio propio, este es el valor principal; si no lo configuras, se usa el dominio que entrega Vercel.
-   - `APP_ORIGINS` (opcional): varios dominios separados por comas, por ejemplo `https://reciclamesta.vercel.app,https://www.reciclamesta.com`. El servidor también detecta automáticamente `VERCEL_URL`, `VERCEL_BRANCH_URL` y `VERCEL_PROJECT_PRODUCTION_URL` para que funcionen las previews.
+   - `APP_ORIGIN`: dominio HTTPS final de la app, por ejemplo `https://reciclameesta.vercel.app` (sin `/` final). Si usas un dominio propio, este es el valor principal; si no lo configuras, se usa el dominio que entrega Vercel.
+   - `APP_ORIGINS` (opcional): varios dominios separados por comas, por ejemplo `https://reciclameesta.vercel.app`. El servidor también detecta automáticamente `VERCEL_URL`, `VERCEL_BRANCH_URL` y `VERCEL_PROJECT_PRODUCTION_URL` para que funcionen las previews.
    No configures las variables `MYSQL_*` en Vercel; solo fueron necesarias para importar desde el MySQL local.
 
    **Importante:** cada variable debe quedar marcada para **Production** (marca también Preview y Development si quieres). La página **Environments** no es donde se guardan las variables; usa **Project Settings > Environment Variables**. Después de guardar, entra a **Deployments**, abre el último despliegue y pulsa **Redeploy**. Si `/api/health` responde `{"ok":false,"error":"Falta DATABASE_URL..."}`, la variable no está guardada en Production o el despliegue no se volvió a crear.
