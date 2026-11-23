@@ -125,19 +125,37 @@ El importador presupone que el esquema fuente contiene las tablas de la aplicaci
 
 ### Publicar en Vercel
 
-El proyecto incluye un export de Express para Vercel y un proceso de build que copia HTML, CSS, JavaScript e imágenes a `public/`. El servidor carga el certificado CA desde una ruta estática para que Vercel lo incluya en la función. Vercel sirve los assets estáticos desde su CDN y ejecuta las rutas de Express como una función Node.
+El proyecto exporta Express desde la raíz y guarda HTML, CSS, JavaScript e imágenes en `public/`. Antes de subir cambios de páginas, ejecuta `npm run build` y agrega `public/` a Git. Vercel sirve esos assets desde su CDN y ejecuta las rutas de Express como una función Node. El servidor carga el certificado CA desde una ruta estática para que se incluya en la función.
 
-1. Sube el proyecto a GitHub y en Vercel importa ese repositorio. El build command es `npm run build` (también está declarado en `vercel.json`).
+1. Sube el proyecto a GitHub y en Vercel importa ese repositorio. Deja el framework en **Express** o en detección automática; no definas un Build Command ni Output Directory personalizado.
 2. En Vercel > **Project Settings > Environment Variables**, configura:
    - `DATABASE_URL`: URI de Supabase **Transaction pooler** (puerto `6543`), con `sslmode=verify-full&sslrootcert=supabase-ca.crt` al final. Vercel ejecuta funciones bajo demanda, así que usa transaction pooler y el pool de la app se limita a una conexión.
    - `SUPABASE_URL`: Project URL de Supabase.
    - `SUPABASE_KEY`: publishable/anon key, para el login de GitHub.
-   - `APP_ORIGIN`: origen HTTPS asignado por Vercel, por ejemplo `https://reciclatech.vercel.app` (sin `/` final).
+   - `APP_ORIGIN`: dominio HTTPS final de la app, por ejemplo `https://reciclatech.vercel.app` (sin `/` final). Si usas un dominio propio, este es el valor principal.
+   - `APP_ORIGINS` (opcional): varios dominios separados por comas, por ejemplo `https://reciclatech.vercel.app,https://www.reciclatech.com`. El servidor también detecta automáticamente `VERCEL_URL`, `VERCEL_BRANCH_URL` y `VERCEL_PROJECT_PRODUCTION_URL` para que funcionen las previews.
    No configures las variables `MYSQL_*` en Vercel; solo fueron necesarias para importar desde el MySQL local.
-3. El archivo `supabase-ca.crt` debe estar en el repositorio junto con el código. Es un certificado público de confianza, no una contraseña.
-4. En Supabase **Authentication > URL Configuration > Redirect URLs**, agrega `https://TU-DOMINIO-VERCEL/publico/Login.html*`.
+3. El archivo `supabase-ca.crt` ya está incluido en el repositorio. Es un certificado público de confianza, no una contraseña.
+4. En Supabase **Authentication > URL Configuration > Redirect URLs**, agrega las URLs de la tabla de abajo.
 5. En la app OAuth de GitHub, conserva como **Authorization callback URL** el callback de Supabase `https://TU-PROYECTO.supabase.co/auth/v1/callback`; la IP local o el dominio de Vercel no sustituyen ese callback.
 6. Despliega y abre el dominio HTTPS de Vercel. La ubicación del celular funcionará en ese origen seguro; el HTTPS de Vercel también permite el flujo de GitHub.
+
+#### URLs para Supabase y GitHub
+
+| Dónde se configura | Valor |
+| --- | --- |
+| Supabase > Redirect URLs (local) | `http://localhost:3000/publico/Login.html*` |
+| Supabase > Redirect URLs (producción) | `https://TU-DOMINIO-VERCEL/publico/Login.html*` |
+| Supabase > Redirect URLs (previews) | `https://*-TU-EQUIPO.vercel.app/publico/Login.html*` |
+| GitHub OAuth App > Authorization callback URL | `https://TU-PROYECTO.supabase.co/auth/v1/callback` |
+
+Para imprimir las URLs exactas según tu `.env`:
+
+```bash
+npm run urls:supabase
+```
+
+Si no quieres habilitar el login social en las previews, omite el patrón de previews y deja solo localhost y producción. El callback de GitHub siempre apunta a Supabase, no a Vercel.
 
 Para desarrollo local, conserva en tu `.env` la URI **Session pooler** del puerto `5432`; usa la URI Transaction pooler del puerto `6543` solo en Vercel.
 
@@ -166,6 +184,8 @@ El login social usa Supabase. La publishable/anon key es pública y el servidor 
    http://localhost:3000/publico/Login.html*
    https://TU-DOMINIO/publico/Login.html*
    ```
+
+   En Vercel puedes agregar también el patrón de previews y ejecutar `npm run urls:supabase` para copiar los valores exactos.
 
 6. Si `SUPABASE_URL` sigue siendo el valor de ejemplo (`https://supabase.co`), el servidor avisa que el OAuth está desactivado y los botones muestran el error al pulsarlos. No es un proyecto real de Supabase.
 

@@ -9,6 +9,7 @@ const ROOT = path.resolve(__dirname, '..');
 const ENV_FILE = path.join(ROOT, '.env');
 require('dotenv').config({ path: ENV_FILE });
 
+const { esProduccionPublica, normalizarOrigen, origenesApp } = require('./origenes');
 const DOMINIOS_CORREO = require('../js/dominios_correo.js');
 
 // Solo se aceptan claves públicas (publishable o anon). Si alguien pega la
@@ -42,21 +43,22 @@ const SESSION_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const ARGON_OPTIONS = { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 };
 const DUMMY_PASSWORD_HASH = argon2.hash(randomBytes(32).toString('hex'), ARGON_OPTIONS);
 
-function esProduccionPublica() {
-    if (process.env.VERCEL_ENV) return process.env.VERCEL_ENV === 'production';
-    return process.env.NODE_ENV === 'production';
+function validarOrigenesProduccion() {
+    if (!esProduccionPublica()) return;
+    const origenes = origenesApp();
+    if (!origenes.length) {
+        throw new Error('Configura APP_ORIGIN o APP_ORIGINS con el dominio HTTPS de la aplicación.');
+    }
+    if (origenes.some((origen) => !origen.startsWith('https://'))) {
+        throw new Error('APP_ORIGIN y APP_ORIGINS deben usar HTTPS en producción.');
+    }
 }
 
 async function inicializarAplicacion() {
     if (!inicializacion) {
         inicializacion = (async () => {
             if (!process.env.DATABASE_URL) throw new Error('Falta DATABASE_URL en las variables de entorno.');
-            if (esProduccionPublica() && !process.env.APP_ORIGIN) {
-                throw new Error('Configura APP_ORIGIN con el dominio HTTPS de la aplicación.');
-            }
-            if (esProduccionPublica() && new URL(process.env.APP_ORIGIN).protocol !== 'https:') {
-                throw new Error('APP_ORIGIN debe usar HTTPS en producción.');
-            }
+            validarOrigenesProduccion();
             db = require('./base_datos');
             await db.inicializar();
         })().catch((error) => {
@@ -198,10 +200,14 @@ function tokenSesion(req) {
     return match ? match[1] : null;
 }
 
+function cookieSegura() {
+    return esProduccionPublica() || Boolean(process.env.VERCEL);
+}
+
 function establecerCookie(res, token) {
     res.cookie(SESSION_COOKIE, token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: cookieSegura(),
         sameSite: 'lax',
         path: '/',
         maxAge: SESSION_MAX_AGE
@@ -211,7 +217,7 @@ function establecerCookie(res, token) {
 function limpiarCookie(res) {
     res.clearCookie(SESSION_COOKIE, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: cookieSegura(),
         sameSite: 'lax',
         path: '/'
     });
@@ -248,14 +254,24 @@ function verificarSesion(req, res, next) {
     }).catch(next);
 }
 
+function origenesPermitidos(req) {
+    const permitidos = new Set(origenesApp());
+    // En local y en previews se acepta el host actual. En producción solo
+    // cuentan APP_ORIGIN/APP_ORIGINS y los dominios que entrega Vercel.
+    if (!esProduccionPublica()) {
+        const actual = normalizarOrigen(req.protocol + '://' + req.get('host'));
+        if (actual) permitidos.add(actual);
+    }
+    return permitidos;
+}
+
 function validarOrigen(req, res, next) {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
     const origin = req.get('origin');
     if (!origin) return next(new HttpError(403, 'La solicitud debe provenir del mismo sitio.'));
     try {
-        const expected = process.env.APP_ORIGIN || req.protocol + '://' + req.get('host');
-        if (new URL(origin).origin !== new URL(expected).origin) {
-        return next(new HttpError(403, 'El origen de la solicitud no está autorizado.'));
+        if (!origenesPermitidos(req).has(new URL(origin).origin)) {
+            return next(new HttpError(403, 'El origen de la solicitud no está autorizado.'));
         }
     } catch {
         return next(new HttpError(403, 'El origen de la solicitud no es válido.'));

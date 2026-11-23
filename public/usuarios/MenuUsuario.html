@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi cuenta · ReciclaTech</title>
+<link rel="icon" type="image/png" href="/imagenes/favicon.png">
+<link rel="stylesheet" href="../../css/estilos.css">
+</head>
+<body data-pagina="MenuUsuario" data-acceso="usuario" data-menu="MenuUsuario.html">
+<a class="sr-only" href="#principal">Saltar al contenido</a>
+<header id="cabecera"></header>
+<main class="contenido" id="principal">
+
+<h1 id="saludo">Bienvenido</h1>
+<p class="suave">¿Qué quieres hacer hoy?</p>
+
+<section class="tarjeta cerca" aria-labelledby="cerca-titulo">
+  <div class="cerca-cabecera">
+    <div>
+      <h2 id="cerca-titulo">Punto más cercano a tu ubicación</h2>
+      <p class="suave chico">Comparte tu ubicación y te mostramos el centro de acopio verificado más cercano.</p>
+    </div>
+    <button class="btn" type="button" id="btn-mi-ubicacion">Usar mi ubicación</button>
+  </div>
+  <div id="cerca-estado" class="mensaje info" role="status" hidden></div>
+  <div id="cerca-resultado"></div>
+</section>
+
+<section class="rejilla c4" aria-label="Opciones">
+  <a class="tarjeta tarjeta-enlace" href="Consulta.html"><div class="icono icono-logo" aria-hidden="true"><img src="/imagenes/logo-c.png" alt=""></div><h2>Consultar centros de acopio</h2><p class="suave chico">Visualiza los puntos registrados y su ubicación.</p><span class="mas">Entrar ›</span></a>
+  <a class="tarjeta tarjeta-enlace" href="Buscar.html"><div class="icono icono-logo" aria-hidden="true"><img src="/imagenes/logo-b.png" alt=""></div><h2>Buscar puntos</h2><p class="suave chico">Busca por criterios y filtra por tipo de dispositivo.</p><span class="mas">Entrar ›</span></a>
+  <a class="tarjeta tarjeta-enlace" href="Horarios.html"><div class="icono icono-logo" aria-hidden="true"><img src="/imagenes/logo-h.png" alt=""></div><h2>Consultar horarios</h2><p class="suave chico">Revisa los horarios de atención de cada punto.</p><span class="mas">Entrar ›</span></a>
+  <a class="tarjeta tarjeta-enlace" href="Reporte.html"><div class="icono icono-logo" aria-hidden="true"><img src="/imagenes/logo.png" alt=""></div><h2>Generar reporte</h2><p class="suave chico">Informa un problema sobre un centro de acopio.</p><span class="mas">Entrar ›</span></a>
+</section>
+<h2 style="margin-top:2rem">Mis reportes</h2>
+<div id="mis-reportes"></div>
+
+</main>
+<footer id="pie"></footer>
+<script src="../../js/datos.js"></script>
+<script src="../../js/app.js"></script>
+<script src="../../js/validaciones.js"></script>
+<script src="../../js/paginas_usuarios.js"></script>
+</body>
+</html>
