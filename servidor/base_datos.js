@@ -3,12 +3,26 @@ const fsSync = require('node:fs');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-if (!process.env.DATABASE_URL) {
+// Acepta el nombre documentado y también los que crea la integración de
+// Supabase en Vercel (POSTGRES_URL, etc.), para que la app no dependa de un
+// único nombre de variable.
+const databaseUrlRaw = process.env.DATABASE_URL
+    || process.env.POSTGRES_URL
+    || process.env.POSTGRES_URL_NON_POOLING
+    || process.env.SUPABASE_DB_URL
+    || '';
+
+if (!databaseUrlRaw) {
     throw new Error('Falta DATABASE_URL. Configura la conexión de Postgres de Supabase en .env.');
 }
 
 const ROOT = path.resolve(__dirname, '..');
-const databaseUrl = new URL(process.env.DATABASE_URL);
+let databaseUrl;
+try {
+    databaseUrl = new URL(databaseUrlRaw);
+} catch {
+    throw new Error('DATABASE_URL no es una URL válida. Codifica la contraseña en la URI.');
+}
 // Ruta estática: Vercel puede incluir este certificado en el bundle de Node.
 const supabaseCa = fsSync.readFileSync(path.join(ROOT, 'supabase-ca.crt'), 'utf8');
 databaseUrl.searchParams.delete('sslmode');

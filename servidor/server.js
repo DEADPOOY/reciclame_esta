@@ -29,7 +29,12 @@ function esClavePublicaSupabase(key) {
 // La publishable/anon key es pública, así que se puede enviar al navegador.
 function supabaseConfig() {
     const url = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
-    const key = String(process.env.SUPABASE_KEY || '').trim();
+    const key = String(
+        process.env.SUPABASE_KEY
+        || process.env.SUPABASE_ANON_KEY
+        || process.env.SUPABASE_PUBLISHABLE_KEY
+        || ''
+    ).trim();
     const valido = /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url) && esClavePublicaSupabase(key);
     return { url, key, valido };
 }
@@ -57,7 +62,11 @@ function validarOrigenesProduccion() {
 async function inicializarAplicacion() {
     if (!inicializacion) {
         inicializacion = (async () => {
-            if (!process.env.DATABASE_URL) throw new Error('Falta DATABASE_URL en las variables de entorno.');
+            const conexion = process.env.DATABASE_URL
+                || process.env.POSTGRES_URL
+                || process.env.POSTGRES_URL_NON_POOLING
+                || process.env.SUPABASE_DB_URL;
+            if (!conexion) throw new Error('Falta DATABASE_URL en las variables de entorno.');
             validarOrigenesProduccion();
             db = require('./base_datos');
             await db.inicializar();
