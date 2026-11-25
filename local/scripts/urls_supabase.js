@@ -1,9 +1,9 @@
 const path = require('node:path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 require('dotenv').config({ path: path.join(ROOT, '.env') });
 
-const { origenesApp } = require('../servidor/origenes');
+const { origenesApp } = require('../../servidor/origenes');
 
 const supabaseUrl = String(process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
 const origenes = origenesApp();

@@ -1,6 +1,6 @@
 // Copia una sola vez los datos de MySQL a tablas PostgreSQL ya creadas.
 // Por seguridad, el destino debe estar vacío antes de correr el importador.
-require('dotenv').config();
+require('dotenv').config({ path: require('node:path').join(__dirname, '../../.env') });
 const mysql = require('mysql2/promise');
 const { Pool } = require('pg');
 

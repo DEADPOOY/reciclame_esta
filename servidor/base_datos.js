@@ -44,7 +44,7 @@ function crearUrlBaseDatos(valor) {
 const ROOT = path.resolve(__dirname, '..');
 const databaseUrl = crearUrlBaseDatos(databaseUrlRaw);
 // Ruta estática: Vercel puede incluir este certificado en el bundle de Node.
-const supabaseCa = fsSync.readFileSync(path.join(ROOT, 'supabase-ca.crt'), 'utf8');
+const supabaseCa = fsSync.readFileSync(path.join(ROOT, 'supabase', 'supabase-ca.crt'), 'utf8');
 databaseUrl.searchParams.delete('sslmode');
 databaseUrl.searchParams.delete('sslrootcert');
 
@@ -126,7 +126,7 @@ function puntoPorDefecto(datos) {
 }
 
 async function inicializar() {
-    const schemaPath = path.join(__dirname, '..', 'base_de_datos', 'supabase_schema.sql');
+    const schemaPath = path.join(__dirname, '..', 'supabase', 'supabase_schema.sql');
     const schema = await fs.readFile(schemaPath, 'utf8');
     for (const statement of schema.split(';').map((part) => part.trim()).filter(Boolean)) {
         await pool.query(statement);

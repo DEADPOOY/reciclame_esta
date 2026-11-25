@@ -77,7 +77,7 @@ const App = (() => {
         rutaPublica('Registro.html') + '">Registrarse</a>';
     }
     const destino = s ? menuPorRol(s.rol) : rutaPublica('Index.html');
-    return '<div class="cabecera-in"><a class="logo" href="' + destino + '" aria-label="ReciclaTech"><img class="logo-marca" src="/imagenes/logo.png" alt="" aria-hidden="true">eciclaTech</a>' +
+    return '<div class="cabecera-in"><a class="logo" href="' + destino + '" aria-label="ReciclaTech"><img class="logo-marca" src="/recursos/imagenes/logo.png" alt="" aria-hidden="true">eciclaTech</a>' +
       '<button class="menu-toggle" id="btn-menu" type="button" aria-label="Abrir menú" aria-expanded="false">Menú</button>' +
       '<nav class="nav" aria-label="Principal">' + nav + '</nav><div class="acciones">' + acc + '</div></div>';
   }

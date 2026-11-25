@@ -6,9 +6,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node servidor/server.js",
-    "migrar:mysql-supabase": "node scripts/migrar_mysql_supabase.js",
-    "urls:supabase": "node scripts/urls_supabase.js",
-    "build": "node scripts/build_public.js"
+    "migrar:mysql-supabase": "node local/scripts/migrar_mysql_supabase.js",
+    "urls:supabase": "node local/scripts/urls_supabase.js"
   },
   "engines": {
     "node": ">=18"

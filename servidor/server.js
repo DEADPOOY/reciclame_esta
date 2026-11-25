@@ -10,7 +10,7 @@ const ENV_FILE = path.join(ROOT, '.env');
 require('dotenv').config({ path: ENV_FILE });
 
 const { esProduccionPublica, normalizarOrigen, origenesApp } = require('./origenes');
-const DOMINIOS_CORREO = require('../js/dominios_correo.js');
+const DOMINIOS_CORREO = require('../public/recursos/js/dominios_correo.js');
 
 // Solo se aceptan claves públicas (publishable o anon). Si alguien pega la
 // service role/secret key, el OAuth se desactiva para no exponerla al navegador.
@@ -647,10 +647,8 @@ app.delete('/api/admin/reportes/:id', verificarSesion, requiereAdmin, asyncRoute
 }));
 
 app.get('/', (req, res) => res.redirect('/publico/Index.html'));
-app.use(express.static(path.join(ROOT, 'paginas'), { dotfiles: 'deny', index: false }));
-app.use('/js', express.static(path.join(ROOT, 'js'), { dotfiles: 'deny', index: false }));
-app.use('/css', express.static(path.join(ROOT, 'css'), { dotfiles: 'deny', index: false }));
-app.use('/vendor/supabase', express.static(path.join(ROOT, 'node_modules', '@supabase', 'supabase-js', 'dist', 'umd'), { dotfiles: 'deny', index: false }));
+// carpeta public/ = único sitio (HTML + recursos) que se publica en Vercel.
+app.use(express.static(path.join(ROOT, 'public'), { dotfiles: 'deny', index: false }));
 app.use((req, res) => res.status(404).json({ error: 'La página o el recurso solicitado no existe.' }));
 
 // El endpoint de salud puede explicar fallos de configuración sin exponer
@@ -661,13 +659,13 @@ function mensajeDiagnostico(error) {
     if (mensaje.includes('Falta DATABASE_URL')) return 'Falta DATABASE_URL en las variables de entorno de Production.';
     if (mensaje.includes('DATABASE_URL')) return mensaje;
     if (mensaje.includes('Configura APP_ORIGIN') || mensaje.includes('APP_ORIGIN')) return mensaje;
-    if (codigo === 'ENOENT') return 'No se encontró supabase-ca.crt en el despliegue.';
+    if (codigo === 'ENOENT') return 'No se encontró supabase/supabase-ca.crt en el despliegue.';
     if (codigo === '28P01') return 'Supabase rechazó la contraseña de DATABASE_URL.';
     if (codigo === '28000') return 'Supabase rechazó el usuario de DATABASE_URL.';
     if (codigo === 'ENOTFOUND' || codigo === 'EAI_AGAIN') return 'No se pudo resolver el host de DATABASE_URL.';
     if (codigo === 'ECONNREFUSED') return 'No se pudo conectar al host o puerto de DATABASE_URL.';
     if (codigo === 'ETIMEDOUT' || codigo === 'CONNECT_TIMEOUT') return 'La conexión a Supabase agotó el tiempo de espera.';
-    if (codigo === '42P01') return 'Falta una tabla en Supabase. Ejecuta base_de_datos/supabase_schema.sql.';
+    if (codigo === '42P01') return 'Falta una tabla en Supabase. Ejecuta supabase/supabase_schema.sql.';
     if (codigo === '42501') return 'El usuario de DATABASE_URL no tiene permisos sobre las tablas.';
     if (/self[- ]signed|certificate|CERT_|UNABLE_TO_VERIFY/i.test(mensaje)) {
         return 'El certificado CA de Supabase no coincide o no se incluyó en el despliegue.';

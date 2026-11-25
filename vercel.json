@@ -3,7 +3,7 @@
   "framework": "express",
   "functions": {
     "index.js": {
-      "includeFiles": "{supabase-ca.crt,base_de_datos/supabase_schema.sql}",
+      "includeFiles": "{public/**,supabase/supabase-ca.crt,supabase/supabase_schema.sql}",
       "maxDuration": 30
     }
   }
