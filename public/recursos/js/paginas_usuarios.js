@@ -9,7 +9,7 @@ Object.assign(window.Paginas, (() => {
   function MenuUsuario() {
     const s = API.sesion();
     const claseEstado = (estado) => estado === 'Alta' ? 'ok' : estado === 'Devuelto' ? 'devuelto' : 'nuevo';
-    $('saludo').textContent = 'quiubo mi, ' + s.nombre;
+    $('saludo').textContent = 'Hola, ' + s.nombre;
     const mis = API.reportes().filter((r) => r.usuarioId === s.id);
     $('mis-reportes').innerHTML = mis.length
       ? '<div class="tabla-wrap"><table><thead><tr><th>Centro de acopio</th><th>Motivo</th><th>Fecha</th><th>Estado</th><th>Respuesta del administrador</th></tr></thead><tbody>' +
@@ -33,7 +33,7 @@ Object.assign(window.Paginas, (() => {
     let seleccionado = null;
     function pintar() {
       const pts = API.buscar({ q: $('q').value });
-      lista.innerHTML = pts.length ? pts.map((p) => tarjetaPunto(p)).join('') : '<div class="vacio">No hay centros parecidos xd.</div>';
+      lista.innerHTML = pts.length ? pts.map((p) => tarjetaPunto(p)).join('') : '<div class="vacio">No hay centros parecidos.</div>';
       $('cuenta').textContent = pts.length + ' centro(s) de acopio';
       lista.querySelectorAll('.punto-card').forEach((c) => c.addEventListener('click', (ev) => {
         if (ev.target.closest('a')) return;

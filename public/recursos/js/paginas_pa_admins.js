@@ -219,14 +219,14 @@ Object.assign(window.Paginas, (() => {
       if (!nombreArchivo) return;
       App.ejecutar(async () => {
         await API.actualizarPunto(p.id, { ficha: { numero: f.numero.value.trim(), fecha: f.fecha.value, archivo: nombreArchivo, estado: 'verificada' } }, 'Ficha verificada');
-        App.mensaje('msg', 'ya ta mi jefe ya quedo pa todos fifiififi', 'ok'); cargar(true);
+        App.mensaje('msg', 'Ficha verificada correctamente.', 'ok'); cargar(true);
       });
     });
     $('revocar').addEventListener('click', () => {
       const p = API.punto(sel.value); if (!p) { App.requerido(sel, 'Elige un punto.'); return; }
       App.ejecutar(async () => {
         await API.actualizarPunto(p.id, { ficha: Object.assign({}, p.ficha, { estado: 'pendiente' }) }, 'Verificación de ficha retirada');
-        App.mensaje('msg', 'ora si jefe que como aun no se verifica no se va a mostrar a los demas vaca va', 'info'); cargar(true);
+        App.mensaje('msg', 'La verificación fue retirada; el centro no se mostrará como verificado.', 'info'); cargar(true);
       });
     });
     cargar();

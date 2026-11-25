@@ -22,7 +22,7 @@ window.API = (() => {
     if(response.status === 204) return null;
     const contentType = response.headers.get('Content-Type') || '';
     const result = contentType.includes('application/json') ? await response.json() : null;
-    if (!response.ok) throw new Error(result && result.error ? result.error : 'no se pudo papi');
+    if (!response.ok) throw new Error(result && result.error ? result.error : 'No se pudo completar la solicitud.');
     return result;
     }
 
