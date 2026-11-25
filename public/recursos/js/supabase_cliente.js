@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 /* Cliente de Supabase para iniciar sesión con GitHub.
  * La configuración se lee de /api/config, que toma SUPABASE_URL y SUPABASE_KEY del .env.
  * El bundle de Supabase se sirve localmente en /recursos/vendor/supabase/supabase.js.

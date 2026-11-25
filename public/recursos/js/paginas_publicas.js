@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 /* el numero de lineas no es coincidencia xd */
 window.Paginas = window.Paginas || {};
 Object.assign(window.Paginas, (() => {

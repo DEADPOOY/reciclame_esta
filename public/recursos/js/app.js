@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 /* ReciclaTech · núcleo del sitio: cabecera, menú, pie, control de acceso por perfil y utilidades.
  * Cada página declara en <body>:
  *   data-pagina = nombre de la página      data-menu = opción activa del menú

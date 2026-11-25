@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 window.Paginas = window.Paginas || {};
 Object.assign(window.Paginas, (() => {
   const $ = (id) => document.getElementById(id);

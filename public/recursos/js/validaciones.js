@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 const Validaciones = (() => {
   const correoValido = (valor) => /^[a-z0-9._%+-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i.test(valor);
   const CARACTERES_CONTROL = /[\u0000-\u001F\u007F]/;

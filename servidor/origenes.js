@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 // Utilidades compartidas para aceptar los distintos dominios de la app:
 // localhost, producción de Vercel, previews y dominios propios.
 

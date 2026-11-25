@@ -1,3 +1,4 @@
+-- ahi va asta arriba del todo
 -- base de wuebos perro
 -- importante de mencionar antes de iniciar esta base de datos,
 -- no es como tal la principal son datos de prueba para la base principal

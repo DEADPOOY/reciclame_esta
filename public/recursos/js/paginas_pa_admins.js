@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 //vamos a ello
 
 window.Paginas = window.Paginas || {};

@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 /* Lista compartida por el navegador y el servidor para validar dominios de correo.
  *
  * - Si "permitidos" tiene elementos, SOLO se aceptan esos dominios.

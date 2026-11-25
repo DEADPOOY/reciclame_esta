@@ -1,3 +1,4 @@
+-- ahi va asta arriba del todo
 -- Esquema PostgreSQL para Supabase. El servidor Express aplica este archivo
 -- al iniciar. Ejecútalo también manualmente en Supabase SQL Editor antes de
 -- importar la información de la base MySQL existente.

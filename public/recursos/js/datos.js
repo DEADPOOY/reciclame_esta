@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 window.API = (() => {
     // Constantes principales
     const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];

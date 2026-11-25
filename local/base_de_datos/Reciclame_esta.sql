@@ -1,3 +1,4 @@
+-- ahi va asta arriba del todo
 CREATE DATABASE IF NOT EXISTS reciclame_esta
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 

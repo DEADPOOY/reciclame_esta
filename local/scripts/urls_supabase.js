@@ -1,3 +1,4 @@
+//ahi va asta arriba del todo
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '../..');
