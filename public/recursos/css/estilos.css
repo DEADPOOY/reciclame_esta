@@ -119,14 +119,6 @@ input.invalido, select.invalido, textarea.invalido { border-color: var(--error);
 .mensaje.info { background: var(--panel); border-color: var(--borde); }
 .mensaje[hidden] { display: none; }
 .fila-botones { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .4rem; }
-.separador { display: flex; align-items: center; gap: .7rem; margin: 1.2rem 0 .8rem; color: var(--suave); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
-.separador::before, .separador::after { content: ''; flex: 1; height: 1px; background: var(--borde); }
-.redes { display: flex; flex-direction: column; gap: .5rem; }
-.btn-social { display: flex; align-items: center; justify-content: center; gap: .6rem; width: 100%; padding: .6rem 1rem; border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); color: var(--texto); font: inherit; font-size: .92rem; cursor: pointer; }
-.btn-social:hover { background: var(--panel); border-color: var(--btn); }
-.btn-social:disabled { opacity: .6; cursor: wait; }
-.social-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; font-size: .72rem; font-weight: 700; letter-spacing: -.02em; flex: none; }
-.social-icon.github { color: #fff; background: #24292f; }
 .form-lineal { max-width: 900px; }
 .paso { margin-bottom: 1rem; }
 .paso h2 { display: flex; align-items: center; gap: .55rem; }

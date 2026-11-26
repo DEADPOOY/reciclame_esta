@@ -164,29 +164,6 @@ async function usuarioPorEmail(email) {
     return rows[0] || null;
 }
 
-async function usuarioOAuth(email, nombre, passwordHash) {
-    const buscar = async () => {
-        const [rows] = await db.execute('SELECT id, email, nombre, rol FROM users WHERE email = ?', [email]);
-        if (!rows.length) return null;
-        return { id: Number(rows[0].id), email: rows[0].email, nombre: rows[0].nombre, rol: rows[0].rol };
-    };
-    const existente = await buscar();
-    if (existente) return existente;
-    try {
-        const [result] = await db.execute(
-            'INSERT INTO users (email, nombre, password_hash, rol) VALUES (?, ?, ?, ?)',
-            [email, nombre || email.split('@')[0], passwordHash, 'usuario']
-        );
-        return { id: Number(result.insertId), email, nombre: nombre || email.split('@')[0], rol: 'usuario' };
-    } catch (error) {
-        if (error.code === '23505') {
-            const creado = await buscar();
-            if (creado) return creado;
-        }
-        throw error;
-    }
-}
-
 async function usuarioPorSesion(tokenHash) {
     const [rows] = await db.execute(
         `SELECT users.id, users.email, users.nombre, users.rol, sessions.token_hash
@@ -279,7 +256,7 @@ async function obtenerReporte(id, connection = db) {
 }
 
 module.exports = {
-    pool: db, DIAS, ALCALDIAS, MOTIVOS, TIPOS_RESIDUO, inicializar, usuarioPorEmail, usuarioOAuth,
+    pool: db, DIAS, ALCALDIAS, MOTIVOS, TIPOS_RESIDUO, inicializar, usuarioPorEmail,
     usuarioPorSesion, eliminarSesion, cargarBootstrap, transaccion, guardarAuditoria,
     obtenerPunto, insertarPunto, actualizarPunto, eliminarPunto, obtenerReporte /*, formatearReporte (uso interno) */
 };

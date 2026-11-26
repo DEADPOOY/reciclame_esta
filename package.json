@@ -6,14 +6,12 @@
   "main": "index.js",
   "scripts": {
     "start": "node servidor/server.js",
-    "migrar:mysql-supabase": "node local/scripts/migrar_mysql_supabase.js",
-    "urls:supabase": "node scripts/urls_supabase.js"
+    "migrar:mysql-supabase": "node local/scripts/migrar_mysql_supabase.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.119.2",
     "argon2": "^0.41.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

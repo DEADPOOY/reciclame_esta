@@ -13,34 +13,6 @@ require('dotenv').config({ path: ENV_FILE });
 const { esProduccionPublica, normalizarOrigen, origenesApp } = require('./origenes');
 const DOMINIOS_CORREO = require('../public/recursos/js/dominios_correo.js');
 
-// Solo se aceptan claves públicas (publishable o anon). Si alguien pega la
-// service role/secret key, el OAuth se desactiva para no exponerla al navegador.
-function esClavePublicaSupabase(key) {
-    if (key.startsWith('sb_publishable_')) return true;
-    if (!key.startsWith('eyJ')) return false;
-    try {
-        const datos = JSON.parse(Buffer.from(key.split('.')[1], 'base64url').toString('utf8'));
-        return datos.role === 'anon';
-    } catch {
-        return false;
-    }
-}
-
-// Configuración de Supabase para el inicio de sesión con GitHub.
-// La publishable/anon key es pública, así que se puede enviar al navegador.
-function supabaseConfig() {
-    const url = String(process.env.RECICLATECH_SUPABASE_URL || process.env.SUPABASE_URL || '').trim().replace(/\/+$/, '');
-    const key = String(
-        process.env.RECICLATECH_SUPABASE_KEY
-        || process.env.SUPABASE_KEY
-        || process.env.SUPABASE_ANON_KEY
-        || process.env.SUPABASE_PUBLISHABLE_KEY
-        || ''
-    ).trim();
-    const valido = /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url) && esClavePublicaSupabase(key);
-    return { url, key, valido };
-}
-
 let db;
 let inicializacion;
 const app = express();
@@ -385,12 +357,6 @@ async function validarPunto(datos) {
 //a donde te la voy a meter uaajajja son los recuersos aqui va el mapa y nuesta galletica
 // mi galletica, mi galletica, mi galletica esta muy bonita
 
-const supabase = supabaseConfig();
-const connectSrc = ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co'];
-if (supabase.valido) {
-    connectSrc.push(supabase.url, supabase.url.replace(/^https:/, 'wss:'));
-}
-
 app.disable('x-powered-by');
 app.use(helmet({
     contentSecurityPolicy: {
@@ -399,7 +365,7 @@ app.use(helmet({
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: connectSrc,
+        connectSrc: ["'self'"],
         frameSrc: ["'self'", 'https://www.openstreetmap.org', 'https://maps.google.com', 'https://www.google.com', 'https://maps.googleapis.com'],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
@@ -467,90 +433,6 @@ app.post('/api/auth/logout', asyncRoute(async (req, res) => {
     limpiarCookie(res);
     res.status(204).end();
 }));
-
-// Recibe el token de Supabase después del OAuth, lo verifica contra Supabase
-// y crea/reutiliza el usuario local para emitir la cookie de sesión de ReciclaTech.
-const oauthRateLimit = rateLimiter(20, 'Demasiados intentos de inicio de sesión. Espera un momento.');
-
-app.post('/api/auth/supabase', oauthRateLimit, asyncRoute(async (req, res) => {
-    const data = requireObject(req.body);
-    const accessToken = requiredText(data.access_token, 'El token de acceso', 4096);
-    const config = supabaseConfig();
-    if (!config.valido) {
-        throw new HttpError(503, 'Supabase no está configurado. Revisa SUPABASE_URL y SUPABASE_KEY en .env.');
-    }
-
-    let respuesta;
-    try {
-        respuesta = await fetch(config.url + '/auth/v1/user', {
-            headers: { apikey: config.key, Authorization: 'Bearer ' + accessToken },
-            signal: AbortSignal.timeout(10000)
-        });
-    } catch (error) {
-        console.error('Error verificando el token con Supabase:', error.message);
-        throw new HttpError(502, 'No fue posible verificar la sesión con Supabase. Intenta de nuevo.');
-    }
-    if (!respuesta.ok) {
-        throw new HttpError(401, 'La sesión de Supabase no es válida o expiró. Inicia sesión de nuevo.');
-    }
-
-    const perfil = await respuesta.json().catch(() => null);
-    const proveedor = perfil && perfil.app_metadata && perfil.app_metadata.provider;
-    if (proveedor !== 'github') {
-        throw new HttpError(403, 'Ese proveedor no está permitido. Usa GitHub.');
-    }
-    const email = perfil && typeof perfil.email === 'string' ? perfil.email.trim().toLowerCase() : '';
-    if (email.length > 254 || !CORREO_VALIDO.test(email) || CARACTERES_CONTROL.test(email)) {
-        throw new HttpError(401, 'Supabase no devolvió un correo electrónico válido.');
-    }
-    const meta = perfil.user_metadata && typeof perfil.user_metadata === 'object' ? perfil.user_metadata : {};
-    const nombreMeta = String(meta.full_name || meta.name || meta.preferred_username || meta.user_name || '')
-        .trim().replace(/\s+/g, ' ').slice(0, 160);
-    const nombre = nombreMeta && TIENE_LETRA.test(nombreMeta) && TEXTO_PERSONA.test(nombreMeta)
-        ? nombreMeta : 'Usuario';
-
-    // Si la cuenta ya existe se reutiliza (conserva su rol). Si es nueva, se crea
-    // con un hash aleatorio porque estos usuarios no usan contraseña local.
-    let user = await db.usuarioPorEmail(email);
-    if (user) {
-        user = { id: Number(user.id), email: user.email, nombre: user.nombre, rol: user.rol };
-    } else {
-        const passwordHash = await argon2.hash(randomBytes(32).toString('hex'), ARGON_OPTIONS);
-        user = await db.usuarioOAuth(email, nombre, passwordHash);
-    }
-    const token = await db.transaccion((connection) => crearSesion(connection, user.id));
-    establecerCookie(res, token);
-    res.json({ session: user });
-}));
-
-app.get('/api/config', (req, res) => {
-    const config = supabaseConfig();
-    const urlPresente = Boolean(String(
-        process.env.RECICLATECH_SUPABASE_URL || process.env.SUPABASE_URL || ''
-    ).trim());
-    const keyPresente = Boolean(String(
-        process.env.RECICLATECH_SUPABASE_KEY
-        || process.env.SUPABASE_KEY
-        || process.env.SUPABASE_ANON_KEY
-        || process.env.SUPABASE_PUBLISHABLE_KEY
-        || ''
-    ).trim());
-    res.json({
-        supabaseConfigurado: config.valido,
-        supabaseUrl: config.valido ? config.url : '',
-        supabaseKey: config.valido ? config.key : '',
-        diagnostico: {
-            entorno: process.env.VERCEL_ENV || process.env.NODE_ENV || '',
-            supabaseUrlPresente: urlPresente,
-            supabaseKeyPresente: keyPresente,
-            supabaseUrlValida: /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(config.url),
-            supabaseKeyValida: Boolean(config.key) && esClavePublicaSupabase(config.key),
-            variablesSupabase: Object.keys(process.env)
-                .filter((nombre) => nombre.startsWith('SUPABASE_') || nombre.startsWith('RECICLATECH_SUPABASE_'))
-                .sort()
-        }
-    });
-});
 
 app.get('/api/health', asyncRoute(async (req, res) => {
     await db.pool.query('SELECT 1');
@@ -692,9 +574,6 @@ app.use((error, req, res, next) => {
 
 async function start() {
     await inicializarAplicacion();
-    if (!supabaseConfig().valido) {
-        console.warn('Aviso: Supabase OAuth está desactivado. Configura SUPABASE_URL y SUPABASE_KEY reales en .env para usar GitHub.');
-    }
     const port = Number(process.env.PORT || 3000);
     app.listen(port, () => console.log('ReciclaTech disponible en http://localhost:' + port));
 }

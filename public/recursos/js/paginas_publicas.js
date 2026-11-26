@@ -27,7 +27,6 @@ Object.assign(window.Paginas, (() => {
       enviarCredenciales(f, true);
     });
     f.addEventListener('reset', () => { App.limpiarMarcas(f); App.mensaje('msg', ''); });
-    if (window.AuthSocial) AuthSocial.conectarBotones('auth-social');
   }
 
   function Login() {
@@ -38,23 +37,6 @@ Object.assign(window.Paginas, (() => {
       enviarCredenciales(f, false);
     });
     f.addEventListener('reset', () => { App.limpiarMarcas(f); App.mensaje('msg', ''); });
-    if (window.AuthSocial) AuthSocial.conectarBotones('auth-social');
-
-    // Si venimos de la redirección de Supabase, validamos la sesión y abrimos el menú.
-    App.ejecutar(async () => {
-      try {
-        if (!window.AuthSocial) return;
-        const sesion = await window.AuthSocial.sincronizarSesion();
-        if (!sesion) return;
-        App.aviso('Sesión iniciada. Bienvenido.', 'ok');
-        const next = App.parametro('next');
-        const valido = next && /^(?:\.\.\/(?:admin|usuarios)\/)?[A-Za-z]+\.html(?:\?[\w=&%.-]*)?$/.test(next);
-        location.href = valido ? next : App.menuPorRol(sesion.rol);
-      } catch (error) {
-        console.error(error);
-        App.mensaje('msg', error.message || 'No se pudo completar el acceso con redes sociales.', 'error');
-      }
-    });
   }
 
   // Función compartida para registrar o iniciar sesión.
