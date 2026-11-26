@@ -27,17 +27,32 @@ window.API = (() => {
     return result;
     }
 
+    function normalizarResiduos(punto, catalogo) {
+        const porNombre = new Map(catalogo.map((r) => [norm(r.nombre), Number(r.id)]));
+        const residuos = (Array.isArray(punto.residuos) ? punto.residuos : []).map((r) => {
+            if (typeof r === 'number') return r;
+            const texto = String(r == null ? '' : r).trim();
+            if (/^\d+$/.test(texto)) return Number(texto);
+            return porNombre.get(norm(texto)) ?? texto;
+        });
+        return { ...punto, residuos };
+    }
+
     async function refresh() {
         const resultado = await request('/api/bootstrap');
         if (!resultado || typeof resultado !== 'object') {
             throw new Error('La API no devolvió datos iniciales válidos.');
         }
+        const residuos = Array.isArray(resultado.residuos) ? resultado.residuos : [];
+        const puntos = Array.isArray(resultado.puntos)
+            ? resultado.puntos.map((p) => normalizarResiduos(p, residuos))
+            : [];
         datos = {
             ...datos,
             ...resultado,
             sesion: resultado.sesion ?? resultado.session ?? null,
-            residuos: Array.isArray(resultado.residuos) ? resultado.residuos : [],
-            puntos: Array.isArray(resultado.puntos) ? resultado.puntos : [],
+            residuos,
+            puntos,
             reportes: Array.isArray(resultado.reportes) ? resultado.reportes : [],
             bitacora: Array.isArray(resultado.bitacora) ? resultado.bitacora : []
         };
@@ -73,7 +88,8 @@ window.API = (() => {
         return (soloVerificados ? verificados() : todos()).filter((p) => {
             const texto = norm([p.nombre, p.calle, p.colonia, p.alcaldia, p.cp].join(' '));
             const okTexto = !nq || nq.split(/\s+/).every((t) => texto.includes(t));
-            const okTipos = tipos.every((t) => p.residuos.includes (t));
+            const buscados = tipos.map((t) => Number(t)).filter(Number.isFinite);
+            const okTipos = !buscados.length || p.residuos.some((r) => buscados.includes(Number(r)));
             return okTexto && okTipos;
         });
     }
@@ -83,7 +99,11 @@ window.API = (() => {
             d.toLocaleDateString('es-MX', {hour: '2-digit', minute: '2-digit' });
     };
 
-    const fmtDia = (h) => (!h || h.cerrado) ? 'Cerrado' : h.abre + ' – ' + h.cierra;
+    const fmtDia = (h) => {
+        if (!h || h.cerrado) return 'Cerrado';
+        if (!h.abre || !h.cierra) return 'Consultar';
+        return h.abre + ' – ' + h.cierra;
+    };
     const todos = () => datos.puntos;
     const verificados = () => todos().filter((p) => p.ficha && p.ficha.estado === 'verificada');
     const punto = (id) => todos().find((p) => p.id === Number(id));
@@ -132,7 +152,7 @@ window.API = (() => {
 
     return{
         DIAS, NOMBRE_DIA, ALCALDIAS, MOTIVOS,
-        cargar: refresh, refrescar: refresh, registrar, login, cerrarSesion, sesion, residuos, nombreResiduo, todos, verificados, punto,
+        cargar: refresh, registrar, login, cerrarSesion, sesion, residuos, nombreResiduo, todos, verificados, punto,
         dirCompleta, tieneUbicacion, buscar, reportes, bitacora, guardarPunto, actualizarPunto,
         agregarResiduo, eliminarPunto, crearReporte, responderReporte, eliminarReporte,
         fmtFecha, fmtDia, norm

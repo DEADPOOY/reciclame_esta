@@ -6,27 +6,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Centros de acopio · ReciclaTech</title>
 <link rel="icon" type="image/png" href="/recursos/imagenes/favicon.png">
+<script src="/recursos/js/tema.js"></script>
 <link rel="stylesheet" href="/recursos/css/estilos.css">
 </head>
 <body data-pagina="Consulta" data-acceso="libre" data-menu="Consulta.html">
 <a class="sr-only" href="#principal">Saltar al contenido</a>
 <header id="cabecera"></header>
-<main class="contenido" id="principal">
-
-<h1>Centros de acopio</h1>
-<form id="form-buscar" role="search" style="display:flex;gap:.6rem;max-width:560px;margin-bottom:1rem">
-  <label class="sr-only" for="q">Buscar por nombre o alcaldía</label>
-  <input type="search" id="q" placeholder="Buscar por nombre o alcaldía"><button class="btn" type="submit">Buscar</button>
-</form>
-<div class="dos-col">
-  <div>
-    <iframe id="mapa" class="mapa mapa-alto" title="Mapa de centros de acopio" loading="lazy"></iframe>
-    <p class="chico"><a id="enlace-mapa" href="#" target="_blank" rel="noopener" hidden></a></p>
-    <p class="suave chico">Selecciona un centro de la lista para ver su ubicación en el mapa.</p>
+<main class="contenido consulta-contenido" id="principal">
+  <div class="consulta-mapa">
+    <iframe id="mapa" class="mapa-fondo" title="Mapa de centros de acopio" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+    <aside class="panel-centros" aria-label="Lista de centros de acopio">
+      <div class="panel-cabecera">
+        <p class="panel-eyebrow">ReciclaTech · CDMX</p>
+        <h1>Centros de acopio</h1>
+        <p class="suave chico" id="cuenta">Puntos registrados</p>
+        <form id="form-buscar" role="search" class="buscador-centros">
+          <label class="sr-only" for="q">Buscar por nombre o alcaldía</label>
+          <input type="search" id="q" placeholder="Buscar por nombre o alcaldía">
+          <button class="btn" type="submit">Buscar</button>
+        </form>
+      </div>
+      <div id="lista" class="lista-puntos lista-flotante"></div>
+      <div class="panel-pie">
+        <a id="enlace-mapa" class="chico" href="#" target="_blank" rel="noopener" hidden></a>
+        <p class="suave chico">Selecciona un centro de la lista para ver su ubicación en el mapa.</p>
+      </div>
+    </aside>
   </div>
-  <div><h2 id="cuenta">Puntos registrados</h2><div id="lista" class="lista-puntos"></div></div>
-</div>
-
 </main>
 <script src="/recursos/js/datos.js"></script>
 <script src="/recursos/js/app.js"></script>

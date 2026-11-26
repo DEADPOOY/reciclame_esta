@@ -78,9 +78,10 @@ const App = (() => {
         rutaPublica('Registro.html') + '">Registrarse</a>';
     }
     const destino = s ? menuPorRol(s.rol) : rutaPublica('Index.html');
+    const botonTema = '<button class="btn-tema" id="btn-tema" type="button" aria-label="Activar modo oscuro" aria-pressed="false">Oscuro</button>';
     return '<div class="cabecera-in"><a class="logo" href="' + destino + '" aria-label="ReciclaTech"><img class="logo-marca" src="/recursos/imagenes/logo.png" alt="" aria-hidden="true">eciclaTech</a>' +
       '<button class="menu-toggle" id="btn-menu" type="button" aria-label="Abrir menú" aria-expanded="false">Menú</button>' +
-      '<nav class="nav" aria-label="Principal">' + nav + '</nav><div class="acciones">' + acc + '</div></div>';
+      '<nav class="nav" aria-label="Principal">' + nav + '</nav><div class="acciones">' + acc + botonTema + '</div></div>';
   }
 
   function pintarMenuAdmin(activo) {
@@ -108,6 +109,35 @@ const App = (() => {
     if (tog) tog.addEventListener('click', () => {
       const abierta = cab.classList.toggle('abierta'); tog.setAttribute('aria-expanded', abierta ? 'true' : 'false');
     });
+    const btnTema = document.getElementById('btn-tema');
+    if (btnTema) {
+      const sincronizarTema = () => {
+        const oscuro = document.documentElement.dataset.tema === 'oscuro';
+        btnTema.textContent = oscuro ? 'Claro' : 'Oscuro';
+        btnTema.setAttribute('aria-label', oscuro ? 'Activar modo claro' : 'Activar modo oscuro');
+        btnTema.setAttribute('aria-pressed', oscuro ? 'true' : 'false');
+        btnTema.title = oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+      };
+      btnTema.addEventListener('click', () => {
+        if (window.Tema) window.Tema.alternar();
+        else {
+          const raiz = document.documentElement;
+          const nuevo = raiz.dataset.tema === 'oscuro' ? 'claro' : 'oscuro';
+          raiz.dataset.tema = nuevo;
+          raiz.style.colorScheme = nuevo === 'oscuro' ? 'dark' : 'light';
+          try { localStorage.setItem('reciclatech_tema', nuevo); } catch (e) { /* nada */ }
+        }
+        sincronizarTema();
+      });
+      window.addEventListener('storage', (ev) => {
+        if (ev.key !== 'reciclatech_tema') return;
+        const nuevo = ev.newValue === 'oscuro' ? 'oscuro' : 'claro';
+        if (window.Tema) window.Tema.aplicar(nuevo);
+        else document.documentElement.dataset.tema = nuevo;
+        sincronizarTema();
+      });
+      sincronizarTema();
+    }
   }
 // no pienso explicar lo anterior porque se netiende y alch ya me dio hueva pa
 
@@ -283,6 +313,6 @@ const App = (() => {
   }
 
   return { esc, parametro, aviso, avisoDiferido, menuPorRol, chipsResiduos, badgeFicha, urlMapa, urlMapaGrande,
-    tablaHorario, opcionesPuntos, opcionesLista, marcar, limpiarMarcas, requerido, mensaje, ejecutar,
-    iniciarPuntoCercano };
+    tablaHorario, opcionesPuntos, opcionesLista, marcar, limpiarMarcas, requerido, mensaje, ejecutar
+    };
 })();

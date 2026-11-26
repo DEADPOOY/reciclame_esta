@@ -205,12 +205,6 @@ const Validaciones = (() => {
     return valido;
   }
 
-  function punto(form) {
-    let valido = marcarRequerido(form.nombre, 'Escribe el nombre del punto.');
-    valido = marcarRequerido(form.calle, 'Escribe la dirección del punto.') && valido;
-    valido = marcarRequerido(form.alcaldia, 'Selecciona una alcaldía.') && valido;
-    return valido;
-  }
 
   function puntoCompleto(form) {
     let valido = validarTexto(form.nombre, 'Escribe el nombre del punto.', 'El nombre del punto', 3, 180);
@@ -312,5 +306,5 @@ const Validaciones = (() => {
     return valido;
   }
 
-  return { prepararRegistro, registro, login, reporte, punto, puntoCompleto, ficha, nuevoResiduo, guardarResiduos, horarios, horariosTabla, ubicacion, coordenadas };
+  return { prepararRegistro, registro, login, reporte, puntoCompleto, ficha, nuevoResiduo, guardarResiduos, horarios, horariosTabla, ubicacion, coordenadas };
 })();

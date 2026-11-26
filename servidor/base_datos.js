@@ -83,7 +83,6 @@ function clienteCompatible(client) {
 
 const db = clienteCompatible(pool);
 const DIAS = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-const NOMBRE_DIA = { lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles', jueves: 'Jueves',viernes: 'Viernes', sabado: 'Sábado', domingo: 'Domingo' };
 const ALCALDIAS = ['Álvaro Obregón', 'Azcapotzalco', 'Benito Juárez', 'Coyoacán', 'Cuajimalpa de Morelos', 'Cuauhtémoc', 'Gustavo A. Madero', 'Iztacalco', 'Iztapalapa', 'La Magdalena Contreras', 'Miguel Hidalgo', 'Milpa Alta', 'Tláhuac', 'Tlalpan', 'Venustiano Carranza', 'Xochimilco'];
 const MOTIVOS = ['Información incorrecta', 'Horario distinto al publicado', 'Centro cerrado o sin servicio', 'No aceptan los residuos indicados', 'Otro'];
 const TIPOS_RESIDUO = ['Celulares y tablets', 'Computadoras y laptops', 'Pantallas y televisores', 'Baterías y pilas', 'Cables y cargadores', 'Impresoras', 'Consolas y videojuegos', 'Electrodomésticos pequeños'];
@@ -280,7 +279,7 @@ async function obtenerReporte(id, connection = db) {
 }
 
 module.exports = {
-    pool: db, DIAS, NOMBRE_DIA, ALCALDIAS, MOTIVOS, TIPOS_RESIDUO, inicializar, usuarioPorEmail, usuarioOAuth,
+    pool: db, DIAS, ALCALDIAS, MOTIVOS, TIPOS_RESIDUO, inicializar, usuarioPorEmail, usuarioOAuth,
     usuarioPorSesion, eliminarSesion, cargarBootstrap, transaccion, guardarAuditoria,
-    obtenerPunto, insertarPunto, actualizarPunto, eliminarPunto, obtenerReporte, formatearReporte
+    obtenerPunto, insertarPunto, actualizarPunto, eliminarPunto, obtenerReporte /*, formatearReporte (uso interno) */
 };

@@ -47,7 +47,6 @@ window.AuthSocial = (() => {
     if (error) throw error;
   }
 
-  const loginConGitHub = () => iniciarSesion('github');
 
   async function sincronizarSesion() {
     const params = new URLSearchParams(window.location.search);
@@ -110,7 +109,6 @@ window.AuthSocial = (() => {
     });
   }
 
-  window.loginConGitHub = loginConGitHub;
 
-  return { iniciarSesion, loginConGitHub, sincronizarSesion, conectarBotones };
+  return { iniciarSesion, sincronizarSesion, conectarBotones };
 })();

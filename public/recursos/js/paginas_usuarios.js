@@ -28,26 +28,54 @@ Object.assign(window.Paginas, (() => {
       '<a class="btn sec chico" href="Punto.html?id=' + p.id + '">Ver información</a></div></article>';
   }
 
-  //lista los centros disponibles, permite buscar por texto y seleccionar uno para verlo en el mapa.
+  // Centros de acopio: mapa de fondo y listado flotante. El mapa muestra un
+  // solo punto a la vez, el que se elige desde la lista.
   function Consulta() {
     const lista = $('lista'); const mapa = $('mapa'); const enlace = $('enlace-mapa');
     let seleccionado = null;
+
+    function tarjetaMapa(p) {
+      return '<article class="punto-card punto-card-mapa" data-id="' + p.id + '">' +
+        '<div class="punto-card-cab"><h3>' + E(p.nombre) + '</h3><span class="insignia ok">Verificado</span></div>' +
+        '<div class="suave chico">' + E(API.dirCompleta(p)) + '</div>' +
+        '<div class="acciones-card"><span>' + App.chipsResiduos(p) + '</span>' +
+        '<a class="btn sec chico" href="Punto.html?id=' + p.id + '">Ver ficha</a></div></article>';
+    }
+
+    function seleccionar(id) {
+      const p = API.punto(id);
+      if (!p) return;
+      seleccionado = id;
+      lista.querySelectorAll('.punto-card').forEach((c) => c.classList.toggle('sel', Number(c.dataset.id) === id));
+      mapa.src = App.urlMapa(p);
+      mapa.title = 'Mapa de ' + p.nombre;
+      enlace.hidden = false;
+      enlace.href = App.urlMapaGrande(p);
+      enlace.textContent = 'Abrir ' + p.nombre + ' en Google Maps';
+    }
+
     function pintar() {
       const pts = API.buscar({ q: $('q').value });
-      lista.innerHTML = pts.length ? pts.map((p) => tarjetaPunto(p)).join('') : '<div class="vacio">No hay centros parecidos.</div>';
+      lista.innerHTML = pts.length ? pts.map(tarjetaMapa).join('') : '<div class="vacio">No hay centros parecidos.</div>';
       $('cuenta').textContent = pts.length + ' centro(s) de acopio';
       lista.querySelectorAll('.punto-card').forEach((c) => c.addEventListener('click', (ev) => {
         if (ev.target.closest('a')) return;
         seleccionar(Number(c.dataset.id));
       }));
-      if (seleccionado) { const c = lista.querySelector('[data-id="' + seleccionado + '"]'); if (c) c.classList.add('sel'); }
+
+      const ids = new Set(pts.map((p) => p.id));
+      if (seleccionado && !ids.has(seleccionado)) seleccionado = null;
+      if (!pts.length) {
+        seleccionado = null;
+        mapa.src = App.urlMapa(null);
+        mapa.title = 'Mapa de centros de acopio';
+        enlace.hidden = true;
+        return;
+      }
+      if (!seleccionado) seleccionar(pts[0].id);
+      else lista.querySelector('[data-id="' + seleccionado + '"]')?.classList.add('sel');
     }
-    function seleccionar(id) {
-      seleccionado = id; const p = API.punto(id);
-      lista.querySelectorAll('.punto-card').forEach((c) => c.classList.toggle('sel', Number(c.dataset.id) === id));
-      mapa.src = App.urlMapa(p);
-      enlace.hidden = false; enlace.href = App.urlMapaGrande(p); enlace.textContent = 'Abrir ' + p.nombre + ' en el mapa';
-    }
+
     $('form-buscar').addEventListener('submit', (e) => { e.preventDefault(); pintar(); });
     $('q').addEventListener('input', pintar);
     mapa.src = App.urlMapa(null);
@@ -60,10 +88,51 @@ Object.assign(window.Paginas, (() => {
     const tipos = (App.parametro('tipos') || '').split(',').filter(Boolean).map(Number);
     $('q').value = App.parametro('q') || '';
     const cont = $('resultados');
+    const estado = document.createElement('p');
+    estado.className = 'suave';
+    estado.setAttribute('role', 'status');
+    cont.before(estado);
+    let ubicacion = null;
+    let buscandoUbicacion = false;
+
+    function distanciaKm(a, b) {
+      const rad = (n) => n * Math.PI / 180;
+      const dLat = rad(b.lat - a.lat); const dLng = rad(b.lng - a.lng);
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+      return 6371 * 2 * Math.asin(Math.sqrt(h));
+    }
+
+    function localizar() {
+      if (!navigator.geolocation) {
+        estado.textContent = 'Este navegador no permite obtener tu ubicación.';
+        return;
+      }
+      buscandoUbicacion = true;
+      estado.textContent = 'Buscando el centro más cercano a tu ubicación…';
+      $('cuenta').textContent = 'Buscando…';
+      navigator.geolocation.getCurrentPosition((pos) => {
+        ubicacion = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        buscandoUbicacion = false;
+        pintar();
+      }, () => {
+        buscandoUbicacion = false;
+        estado.textContent = 'No pudimos obtener tu ubicación. Actívala para mostrar el centro más cercano.';
+        $('cuenta').textContent = 'Ubicación necesaria';
+        cont.innerHTML = '<button class="btn sec" id="btn-ubicacion" type="button">Volver a intentar</button>';
+        document.getElementById('btn-ubicacion').addEventListener('click', localizar);
+      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+    }
+
     function pintar() {
-      const pts = API.buscar({ q: $('q').value, tipos });
-      $('cuenta').textContent = pts.length + ' resultado(s)';
-      cont.innerHTML = pts.length ? pts.map((p) => tarjetaPunto(p)).join('')
+      if (buscandoUbicacion || !ubicacion) return;
+      const pts = API.buscar({ q: $('q').value, tipos })
+        .filter((p) => Number.isFinite(Number(p.lat)) && Number.isFinite(Number(p.lng)) && p.lat != null && p.lng != null)
+        .map((p) => ({ p, km: distanciaKm(ubicacion, { lat: Number(p.lat), lng: Number(p.lng) }) }))
+        .sort((a, b) => a.km - b.km);
+      const cercano = pts[0];
+      $('cuenta').textContent = cercano ? 'Centro más cercano · ' + cercano.km.toFixed(1) + ' km' : 'Sin resultados';
+      estado.textContent = cercano ? 'Mostrando solo el punto más cercano a tu ubicación.' : '';
+      cont.innerHTML = cercano ? tarjetaPunto(cercano.p)
         : '<div class="vacio">No encontramos puntos con esos puntos. Prueba con menos filtros.</div>';
     }
     const activos = $('filtros-activos');
@@ -79,10 +148,13 @@ Object.assign(window.Paginas, (() => {
       history.replaceState(null, '', 'Buscar.html' + (p.toString() ? '?' + p : '')); pintar();
     });
     $('btn-filtro').addEventListener('click', () => {
+      const p = new URLSearchParams();
       const q = $('q').value.trim();
-      location.href = 'Filtro.html' + (q ? '?q=' + encodeURIComponent(q) : '');
+      if (q) p.set('q', q);
+      if (tipos.length) p.set('tipos', tipos.join(','));
+      location.href = 'Filtro.html' + (p.toString() ? '?' + p : '');
     });
-    pintar();
+    localizar();
   }
 
   // espera adivina esto es pa los residuos
@@ -97,7 +169,7 @@ Object.assign(window.Paginas, (() => {
     function vista() {
       const pts = API.buscar({ q, tipos: marcados() });
       $('cuenta').textContent = pts.length + ' centro(s) con el filtro';
-      $('vista').innerHTML = pts.slice(0, 4).map((p) => tarjetaPunto(p)).join('') || '<div class="vacio">Ningún punto recibe todos los tipos elegidos.</div>';
+      $('vista').innerHTML = pts.slice(0, 4).map((p) => tarjetaPunto(p)).join('') || '<div class="vacio">Ningún punto recibe alguno de los tipos elegidos.</div>';
     }
     caja.addEventListener('change', vista);
     $('aplicar').addEventListener('click', () => {
