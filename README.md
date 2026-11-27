@@ -3,7 +3,7 @@
 INTEGRANTES 
 
 - ***Martinez Sanchez Geraldine Melody***
-- ***Monzon Vega Ian Adolfo hitler***
+- ***Monzon Vega Ian Adolfo***
 - ***Solis Palacios Ian Yahel***
 - ***Vertiz Angeles Jose Elias Caleb***
 
@@ -13,7 +13,7 @@ proyecto de la escuela sobre reciclar los residuos electronicos actualmente con 
 
 queria ver como se hacia una tabla dentro del readme ya esta bueno la principal funcionalidad del proyecto es poder apoyar 
 a que las personas puedan encontrar un punto para poder des hacer los dispositivos ya que hay varias personas que tienen
-directamente residuos electronicos y esto ayuda a que sepan a donde llevarlos
+directamente residuos electronicos y esto ayuda a que sepan a donde llevarlosr
 
 
 | Columna 1 | Columna 2 | Columna 3 |
