@@ -1,5 +1,4 @@
-//ahi va asta arriba del todo
-// Vercel detects this root Express export as the application's Node function.
+//vercel 
 const express = require('express');
 const servidor = require('./servidor/server');
 

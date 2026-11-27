@@ -1,4 +1,13 @@
 # reciclame_esta
+-----------------------------------------------
+INTEGRANTES 
+
+- ***Martinez Sanchez Geraldine Melody***
+- ***Monzon Vega Ian Adolfo hitler***
+- ***Solis Palacios Ian Yahel***
+- ***Vertiz Angeles Jose Elias Caleb***
+
+-----------------------------------------------
 
 proyecto de la escuela sobre reciclar los residuos electronicos actualmente con muy pocos puntos y con posible escalamiento a un sistema entre usuarios
 
@@ -111,3 +120,8 @@ supabase controla la abse y los logins
 vercel es el dominio publico asi bn vergas
 
 bueno ahora si este es el final me diverti y me gusto gracias por todo
+
+
+que gracias putas soy la puta mera cabra y me la pela todo
+
+yujuuuuuuuuuuuuuuu
