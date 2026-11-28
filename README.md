@@ -125,3 +125,10 @@ bueno ahora si este es el final me diverti y me gusto gracias por todo
 que gracias putas soy la puta mera cabra y me la pela todo
 
 yujuuuuuuuuuuuuuuu
+
+aaa
+**psd: actaulmente hay dos formas de inciar el proyecto**
+- *1* npm start en la carpeta del proyecto en una terminal
+- *2* visitar la url reciclameesta.vercel.app
+
+el servidor local lo uso mas para pruebas antes de haces algun cambio en la que se muestra mas formal
